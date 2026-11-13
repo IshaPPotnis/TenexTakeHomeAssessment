@@ -8,6 +8,7 @@ import com.tenextakehome.dto.ProcessLogsResponse;
 import com.tenextakehome.dto.Result;
 import com.tenextakehome.model.DetectionRule;
 import com.tenextakehome.model.ParserDefinition;
+import com.tenextakehome.exception.LogProcessingException;
 import com.tenextakehome.service.DetectionRuleService;
 import com.tenextakehome.service.DefinitionService;
 import com.tenextakehome.service.ParsingService;
@@ -63,7 +64,7 @@ public class LogsProcessorController {
     private Result parseLog(String log, ParserDefinition parser, List<DetectionRule> detectionRules) {
         try {
             String parsedOutput = parsingService.parseLog(
-                    log, parser.getParserType(), parser.getFieldsToRemove());
+                    log, parser.getParserType(), parser.getFieldsToRemove(), parser.getColumns());
             JsonNode parsedLog = objectMapper.readTree(parsedOutput);
             List<String> matchedIncidents = detectionRules.stream()
                     .filter(rule -> {
@@ -81,7 +82,9 @@ public class LogsProcessorController {
             return new Result(log, parsedOutput,
                     "Parsed successfully using " + parser.getParserType() + ".", matchedIncidents);
         } catch (IllegalArgumentException exception) {
-            return new Result(log, null, exception.getMessage());
+            throw new LogProcessingException(
+                    "Log processing failed for " + parser.getParserType() + " input: " + exception.getMessage(),
+                    exception);
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Parser returned invalid JSON output", exception);
         }

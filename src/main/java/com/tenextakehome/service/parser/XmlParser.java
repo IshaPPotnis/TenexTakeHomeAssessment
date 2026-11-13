@@ -65,7 +65,17 @@ public class XmlParser implements Parser {
 
             Map<String, Object> json = new LinkedHashMap<>();
             Element root = document.getDocumentElement();
-            json.put(root.getTagName(), convertElement(root));
+            if ("Event".equals(root.getTagName())) {
+                NodeList children = root.getChildNodes();
+                for (int i = 0; i < children.getLength(); i++) {
+                    Node child = children.item(i);
+                    if (child.getNodeType() == Node.ELEMENT_NODE) {
+                        addChild(json, child.getNodeName(), convertElement((Element) child));
+                    }
+                }
+            } else {
+                json.put(root.getTagName(), convertElement(root));
+            }
             return objectMapper.writeValueAsString(json);
         } catch (ParserConfigurationException | SAXException | IOException exception) {
             throw new IllegalArgumentException("Unable to parse XML log", exception);

@@ -27,6 +27,14 @@ class ParsingServiceTest {
     }
 
     @Test
+    void parsesEventXmlWithItsChildrenAsRootKeys() {
+        String output = parsingService.parseLog(
+                "<Event><EventID>4625</EventID><Channel>Security</Channel></Event>", ParserType.XML);
+
+        assertEquals("{\"EventID\":\"4625\",\"Channel\":\"Security\"}", output);
+    }
+
+    @Test
     void parsesAndNormalizesJsonLog() {
         String output = parsingService.parseLog("{ \"level\" : \"INFO\" }", ParserType.JSON);
 
@@ -68,6 +76,28 @@ class ParsingServiceTest {
         String output = parsingService.parseLog("INFO,\"database, pool\"   ", ParserType.CSV);
 
         assertEquals("[\"INFO\",\"database, pool\"]", output);
+    }
+
+    @Test
+    void parsesCsvLogUsingConfiguredColumnsAsObjectKeys() {
+        String output = parsingService.parseLog(
+                "4625,Security,\"Failed, repeated login\"",
+                ParserType.CSV,
+                java.util.List.of(),
+                java.util.List.of("EventID", "Channel", "Message"));
+
+        assertEquals("{\"EventID\":\"4625\",\"Channel\":\"Security\","
+                + "\"Message\":\"Failed, repeated login\"}", output);
+    }
+
+    @Test
+    void rejectsCsvLogWhenConfiguredColumnsDoNotMatchFieldCount() {
+        assertThrows(IllegalArgumentException.class,
+                () -> parsingService.parseLog(
+                        "INFO,started",
+                        ParserType.CSV,
+                        java.util.List.of(),
+                        java.util.List.of("level")));
     }
 
     @Test

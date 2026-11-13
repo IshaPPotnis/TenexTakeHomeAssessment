@@ -10,6 +10,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -24,7 +25,9 @@ public class ParserDefinitionInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        Set<ParserType> existingSampleTypes = definitionService.getAllDefinitions().stream()
+        var existingDefinitions = definitionService.getAllDefinitions().stream()
+                .toList();
+        Set<ParserType> existingSampleTypes = existingDefinitions.stream()
                 .filter(definition -> CustomerScope.isGlobal(definition.getCustomerName())
                         && definition.getParserType() != null
                         && ("sample " + definition.getParserType().name().toLowerCase() + " parser")
@@ -32,10 +35,22 @@ public class ParserDefinitionInitializer implements ApplicationRunner {
                 .map(ParserDefinition::getParserType)
                 .collect(Collectors.toCollection(() -> EnumSet.noneOf(ParserType.class)));
 
+        existingDefinitions.stream()
+                .filter(definition -> CustomerScope.isGlobal(definition.getCustomerName())
+                        && definition.getParserType() == ParserType.CSV
+                        && "sample csv parser".equals(definition.getParserName())
+                        && definition.getColumns().isEmpty())
+                .forEach(definition -> definitionService.initializeGlobalColumnsIfMissing(
+                        definition.getParserId(), List.of("EventID", "Channel", "Message")));
+
         for (ParserType parserType : ParserType.values()) {
             if (!existingSampleTypes.contains(parserType)) {
                 String parserName = "sample " + parserType.name().toLowerCase() + " parser";
-                definitionService.createGlobalDefinition(new ParserDefinitionRequest(parserName, parserType));
+                List<String> columns = parserType == ParserType.CSV
+                        ? List.of("EventID", "Channel", "Message")
+                        : List.of();
+                definitionService.createGlobalDefinition(
+                        new ParserDefinitionRequest(parserName, parserType, List.of(), columns));
             }
         }
     }

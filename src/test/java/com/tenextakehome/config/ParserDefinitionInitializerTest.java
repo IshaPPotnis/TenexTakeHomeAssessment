@@ -33,6 +33,10 @@ class ParserDefinitionInitializerTest {
             org.junit.jupiter.api.Assertions.assertEquals(
                     "sample " + request.getParserType().name().toLowerCase() + " parser",
                     request.getParserName());
+            if (request.getParserType() == ParserType.CSV) {
+                org.junit.jupiter.api.Assertions.assertEquals(
+                        List.of("EventID", "Channel", "Message"), request.getColumns());
+            }
         }
     }
 
@@ -46,5 +50,18 @@ class ParserDefinitionInitializerTest {
         initializer.run(null);
 
         verify(definitionService, never()).createGlobalDefinition(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void initializesColumnsOnExistingCsvSampleParser() {
+        when(definitionService.getAllDefinitions()).thenReturn(List.of(
+                new ParserDefinition("sample xml parser", 1L, ParserType.XML),
+                new ParserDefinition("sample json parser", 2L, ParserType.JSON),
+                new ParserDefinition("sample csv parser", 3L, ParserType.CSV)));
+
+        initializer.run(null);
+
+        verify(definitionService).initializeGlobalColumnsIfMissing(
+                3L, List.of("EventID", "Channel", "Message"));
     }
 }

@@ -37,6 +37,14 @@ public class ParsingService {
     }
 
     public String parseLog(String log, ParserType parserType, List<String> fieldsToRemove) {
+        return parseLog(log, parserType, fieldsToRemove, List.of());
+    }
+
+    public String parseLog(
+            String log,
+            ParserType parserType,
+            List<String> fieldsToRemove,
+            List<String> columns) {
         if (parserType == null) {
             throw new IllegalArgumentException("Parser type must not be null");
         }
@@ -45,7 +53,7 @@ public class ParsingService {
         if (parser == null) {
             throw new IllegalStateException("No parser configured for type " + parserType);
         }
-        String parsedOutput = parser.parse(log);
+        String parsedOutput = parser.parse(log, columns);
         if (fieldsToRemove == null || fieldsToRemove.isEmpty()) {
             return parsedOutput;
         }

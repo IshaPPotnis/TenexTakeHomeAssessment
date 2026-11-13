@@ -16,6 +16,7 @@ public class ParserDefinitionRequest {
     private ParserType parserType;
 
     private List<String> fieldsToRemove = new ArrayList<>();
+    private List<String> columns = new ArrayList<>();
 
     public ParserDefinitionRequest() {
     }
@@ -25,9 +26,18 @@ public class ParserDefinitionRequest {
     }
 
     public ParserDefinitionRequest(String parserName, ParserType parserType, List<String> fieldsToRemove) {
+        this(parserName, parserType, fieldsToRemove, List.of());
+    }
+
+    public ParserDefinitionRequest(
+            String parserName,
+            ParserType parserType,
+            List<String> fieldsToRemove,
+            List<String> columns) {
         this.parserName = parserName;
         this.parserType = parserType;
         setFieldsToRemove(fieldsToRemove);
+        setColumns(columns);
     }
 
     public String getParserName() {
@@ -52,5 +62,13 @@ public class ParserDefinitionRequest {
 
     public void setFieldsToRemove(List<String> fieldsToRemove) {
         this.fieldsToRemove = fieldsToRemove == null ? new ArrayList<>() : new ArrayList<>(fieldsToRemove);
+    }
+
+    public List<String> getColumns() {
+        return columns;
+    }
+
+    public void setColumns(List<String> columns) {
+        this.columns = columns == null ? new ArrayList<>() : new ArrayList<>(columns);
     }
 }

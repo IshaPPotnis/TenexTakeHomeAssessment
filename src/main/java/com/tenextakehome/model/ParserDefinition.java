@@ -22,6 +22,7 @@ public class ParserDefinition {
     private ParserType parserType;
 
     private List<String> fieldsToRemove = new ArrayList<>();
+    private List<String> columns = new ArrayList<>();
     private String customerName = CustomerScope.GLOBAL;
 
     public ParserDefinition() {
@@ -32,10 +33,20 @@ public class ParserDefinition {
     }
 
     public ParserDefinition(String parserName, Long parserId, ParserType parserType, List<String> fieldsToRemove) {
+        this(parserName, parserId, parserType, fieldsToRemove, List.of());
+    }
+
+    public ParserDefinition(
+            String parserName,
+            Long parserId,
+            ParserType parserType,
+            List<String> fieldsToRemove,
+            List<String> columns) {
         this.parserName = parserName;
         this.parserId = parserId;
         this.parserType = parserType;
         setFieldsToRemove(fieldsToRemove);
+        setColumns(columns);
     }
 
     public String getParserName() {
@@ -68,6 +79,14 @@ public class ParserDefinition {
 
     public void setFieldsToRemove(List<String> fieldsToRemove) {
         this.fieldsToRemove = fieldsToRemove == null ? new ArrayList<>() : new ArrayList<>(fieldsToRemove);
+    }
+
+    public List<String> getColumns() {
+        return columns == null ? List.of() : columns;
+    }
+
+    public void setColumns(List<String> columns) {
+        this.columns = columns == null ? new ArrayList<>() : new ArrayList<>(columns);
     }
 
     public String getCustomerName() {

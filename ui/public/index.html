@@ -116,6 +116,9 @@
           <option value="JSON">JSON</option>
           <option value="CSV">CSV</option>
         </select>
+        <label id="definition-columns-label" for="definition-columns" hidden>CSV columns (in field order)</label>
+        <textarea id="definition-columns" name="columns" rows="3" placeholder="One column name per line" hidden></textarea>
+        <p id="definition-columns-hint" class="id-hint" hidden>Provide one unique field name for each CSV value.</p>
         <label for="definition-fields-to-remove">Fields to remove after parsing</label>
         <textarea id="definition-fields-to-remove" name="fieldsToRemove" rows="3" placeholder="One field name per line"></textarea>
         <p class="id-hint">Matching field names are removed at every level of the parsed JSON output.</p>

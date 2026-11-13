@@ -59,12 +59,24 @@ public class DefinitionService {
         return createDefinition(request, CustomerScope.GLOBAL);
     }
 
+    public void initializeGlobalColumnsIfMissing(Long parserId, List<String> columns) {
+        ParserDefinition definition = getDefinition(parserId);
+        if (!CustomerScope.isGlobal(definition.getCustomerName())) {
+            throw new IllegalStateException("Cannot initialize columns for a customer parser definition");
+        }
+        if (definition.getColumns().isEmpty()) {
+            definition.setColumns(columns);
+            parserRepository.save(definition);
+        }
+    }
+
     public ParserDefinition createDefinition(ParserDefinitionRequest request, String customerName) {
         ParserDefinition definition = new ParserDefinition(
                 request.getParserName(),
                 nextParserId(),
                 request.getParserType(),
-                request.getFieldsToRemove());
+                request.getFieldsToRemove(),
+                request.getColumns());
         definition.setCustomerName(customerName);
         return parserRepository.save(definition);
     }
@@ -77,6 +89,7 @@ public class DefinitionService {
         definition.setParserName(request.getParserName());
         definition.setParserType(request.getParserType());
         definition.setFieldsToRemove(request.getFieldsToRemove());
+        definition.setColumns(request.getColumns());
         return parserRepository.save(definition);
     }
 

@@ -2,11 +2,14 @@ package com.tenextakehome.service.parser;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tenextakehome.model.ParserType;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Component
 public class CsvParser implements Parser {
@@ -24,6 +27,11 @@ public class CsvParser implements Parser {
 
     @Override
     public String parse(String input) {
+        return parse(input, List.of());
+    }
+
+    @Override
+    public String parse(String input, List<String> columns) {
         if (input == null || input.isBlank()) {
             throw new IllegalArgumentException("CSV log must not be null or blank");
         }
@@ -72,8 +80,34 @@ public class CsvParser implements Parser {
         }
         fields.add(field.toString());
 
+        if (columns == null || columns.isEmpty()) {
+            return serialize(fields);
+        }
+        if (columns.size() != fields.size()) {
+            throw new IllegalArgumentException(
+                    "CSV log has " + fields.size() + " fields but " + columns.size() + " columns are configured");
+        }
+
+        ObjectNode output = objectMapper.createObjectNode();
+        Set<String> configuredColumns = new HashSet<>();
+        for (int i = 0; i < columns.size(); i++) {
+            String column = columns.get(i);
+            if (column == null || column.isBlank()) {
+                throw new IllegalArgumentException("CSV column names must not be blank");
+            }
+            String key = column.trim();
+            if (!configuredColumns.add(key)) {
+                throw new IllegalArgumentException("CSV column names must be unique: " + key);
+            }
+            output.put(key, fields.get(i));
+        }
+
+        return serialize(output);
+    }
+
+    private String serialize(Object value) {
         try {
-            return objectMapper.writeValueAsString(fields);
+            return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Unable to serialize parsed CSV log", exception);
         }

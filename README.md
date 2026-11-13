@@ -123,17 +123,29 @@ Response (`200`):
 }
 ```
 
-Each result corresponds to one input line. `parsedOutput` is a JSON-encoded string; it is `null` when parsing fails, and `notes` describes success or the parsing error. `matchedIncident` contains matching rules as `id-Name` strings, or an empty array when none match. CSV parser output is represented as JSON arrays of field values.
+Each result corresponds to one input line. `parsedOutput` is a JSON-encoded string. `matchedIncident` contains matching rules as `id-Name` strings, or an empty array when none match. CSV output is a JSON array when no columns are configured; when columns are configured, it is a JSON object keyed by those column names.
+
+If any log cannot be parsed, the endpoint responds with `500 Internal Server Error` and a JSON error body instead of returning partial results. The UI displays the error message from the response. For example:
+
+```json
+{
+  "status": 500,
+  "error": "Internal Server Error",
+  "message": "Log processing failed for XML input: Unable to parse XML log"
+}
+```
 
 #### Sample logs for testing
 
-Select the matching sample parser in the UI, or use its `parserId` from `GET /api/definitions`, then submit the corresponding log. The built-in failed-login rule should match the XML and JSON examples:
+Select the matching sample parser in the UI, or use its `parserId` from `GET /api/definitions`, then submit the corresponding log. The built-in failed-login rule matches the JSON example.
 
-**XML** — use the `sample xml parser`:
+**XML** — use the `sample xml parser`. An `<Event>` root is omitted from parsed output; its child elements become root keys:
 
 ```xml
-<log><EventID>4625</EventID><Channel>Security</Channel><Message>Failed login</Message></log>
+<Event><EventID>4625</EventID><Channel>Security</Channel><Message>Failed login</Message></Event>
 ```
+
+This parses to `{"EventID":"4625","Channel":"Security","Message":"Failed login"}`. Other XML root elements remain in the output as a named root object.
 
 **JSON** — use the `sample json parser`:
 
@@ -147,7 +159,7 @@ Select the matching sample parser in the UI, or use its `parserId` from `GET /ap
 4625,Security,Failed login
 ```
 
-Each log is one string in the `logs` array; submit one request per parser type because each request selects a single `parserId`. The CSV parser returns the comma-separated values as a JSON array and does not infer column names.
+Each log is one string in the `logs` array; submit one request per parser type because each request selects a single `parserId`. The startup `sample csv parser` uses the columns `EventID`, `Channel`, and `Message`, so its sample row parses to a keyed JSON object. CSV values remain strings.
 
 ### Parser definitions
 
@@ -157,11 +169,12 @@ Parser create and update request:
 {
   "parserName": "Windows JSON",
   "parserType": "JSON",
-  "fieldsToRemove": ["password", "token"]
+  "fieldsToRemove": ["password", "token"],
+  "columns": []
 }
 ```
 
-`parserName` is required. `parserType` is one of `XML`, `JSON`, or `CSV`. `fieldsToRemove` is optional; matching keys are removed recursively from parsed JSON output. Parser IDs are assigned incrementally and should not be supplied in create/update request bodies.
+`parserName` is required. `parserType` is one of `XML`, `JSON`, or `CSV`. `fieldsToRemove` is optional; matching keys are removed recursively from parsed JSON output. `columns` is optional and applies to CSV definitions: provide one unique name per value, in field order, to use those names as keys in the parsed JSON object. If omitted or empty, CSV output remains a JSON array. For example, with `columns: ["EventID", "Channel", "Message"]`, `4625,Security,Failed login` becomes `{"EventID":"4625","Channel":"Security","Message":"Failed login"}`. The number of configured columns must match the number of CSV values. Parser IDs are assigned incrementally and should not be supplied in create/update request bodies.
 
 | Method and path | Request | Response and meaning |
 |---|---|---|
@@ -205,7 +218,7 @@ At application startup, the API ensures the following shared `GLOBAL` records ex
 
 - `sample xml parser` with type `XML`
 - `sample json parser` with type `JSON`
-- `sample csv parser` with type `CSV`
+- `sample csv parser` with type `CSV` and columns `EventID`, `Channel`, and `Message`
 - `Failed Login attempt`, with logic `EventID=4625 AND Channel=Security`
 
 These are initialized only when missing, so restarting the app does not overwrite existing sample definitions or the built-in rule.

@@ -18,6 +18,9 @@ const parserForm = document.querySelector("#parser-form");
 const formTitle = document.querySelector("#form-title");
 const definitionName = document.querySelector("#definition-name");
 const definitionType = document.querySelector("#definition-type");
+const definitionColumnsLabel = document.querySelector("#definition-columns-label");
+const definitionColumnsInput = document.querySelector("#definition-columns");
+const definitionColumnsHint = document.querySelector("#definition-columns-hint");
 const fieldsToRemoveInput = document.querySelector("#definition-fields-to-remove");
 const saveParserButton = document.querySelector("#save-parser-button");
 const detectionCount = document.querySelector("#detection-count");
@@ -44,6 +47,13 @@ let definitions = [];
 let detectionRules = [];
 let editingParserId = null;
 let editingDetectionId = null;
+
+function updateColumnsVisibility() {
+  const isCsv = definitionType.value === "CSV";
+  definitionColumnsLabel.hidden = !isCsv;
+  definitionColumnsInput.hidden = !isCsv;
+  definitionColumnsHint.hidden = !isCsv;
+}
 
 function getLogs() {
   return logsInput.value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
@@ -361,7 +371,13 @@ function renderDefinitions() {
     const exclusions = document.createElement("p");
     const fields = Array.isArray(definition.fieldsToRemove) ? definition.fieldsToRemove : [];
     exclusions.textContent = fields.length ? `Removes: ${fields.join(", ")}` : "No fields removed";
+    const columns = document.createElement("p");
+    const configuredColumns = Array.isArray(definition.columns) ? definition.columns : [];
+    columns.textContent = definition.parserType === "CSV"
+      ? configuredColumns.length ? `Columns: ${configuredColumns.join(", ")}` : "No CSV columns configured"
+      : "";
     details.append(name, meta, exclusions);
+    if (definition.parserType === "CSV") details.append(columns);
 
     const actions = document.createElement("div");
     actions.className = "parser-actions";
@@ -407,6 +423,7 @@ function openCreateForm() {
   formTitle.textContent = "New parser";
   saveParserButton.querySelector("span").textContent = "Save definition";
   parserForm.hidden = false;
+  updateColumnsVisibility();
   definitionName.focus();
 }
 
@@ -414,7 +431,9 @@ function beginEdit(definition) {
   editingParserId = definition.parserId;
   definitionName.value = definition.parserName;
   definitionType.value = definition.parserType;
+  definitionColumnsInput.value = Array.isArray(definition.columns) ? definition.columns.join("\n") : "";
   fieldsToRemoveInput.value = Array.isArray(definition.fieldsToRemove) ? definition.fieldsToRemove.join("\n") : "";
+  updateColumnsVisibility();
   formTitle.textContent = "Edit parser";
   saveParserButton.querySelector("span").textContent = "Update definition";
   parserForm.hidden = false;
@@ -432,7 +451,10 @@ async function saveDefinition(event) {
   const definition = {
     parserName: definitionName.value.trim(),
     parserType: definitionType.value,
-    fieldsToRemove: fieldsToRemoveInput.value.split(/[\n,]/).map((field) => field.trim()).filter(Boolean)
+    fieldsToRemove: fieldsToRemoveInput.value.split(/[\n,]/).map((field) => field.trim()).filter(Boolean),
+    columns: definitionType.value === "CSV"
+      ? definitionColumnsInput.value.split(/[\n,]/).map((column) => column.trim()).filter(Boolean)
+      : []
   };
   if (!definition.parserName) {
     showStatus(libraryStatus, "Parser name is required.", true);
@@ -575,6 +597,7 @@ processTab.addEventListener("click", () => setView("process"));
 libraryTab.addEventListener("click", () => setView("library"));
 detectionTab.addEventListener("click", () => setView("detection"));
 document.querySelector("#new-parser-button").addEventListener("click", openCreateForm);
+definitionType.addEventListener("change", updateColumnsVisibility);
 document.querySelector("#cancel-edit-button").addEventListener("click", closeForm);
 document.querySelector("#cancel-form-button").addEventListener("click", closeForm);
 parserForm.addEventListener("submit", saveDefinition);
