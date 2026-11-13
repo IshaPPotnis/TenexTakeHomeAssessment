@@ -27,6 +27,7 @@
     <nav class="tabs" aria-label="Workspace">
       <button class="tab-button is-active" id="process-tab" type="button" aria-controls="process-view" aria-selected="true">Process logs</button>
       <button class="tab-button" id="library-tab" type="button" aria-controls="library-view" aria-selected="false">Parser library <span id="parser-count" class="count-badge">0</span></button>
+      <button class="tab-button" id="detection-tab" type="button" aria-controls="detection-view" aria-selected="false">Detection library <span id="detection-count" class="count-badge">…</span></button>
     </nav>
 
     <section class="workspace" id="process-view" aria-labelledby="input-title">
@@ -94,9 +95,46 @@
           <option value="JSON">JSON</option>
           <option value="CSV">CSV</option>
         </select>
+        <label for="definition-fields-to-remove">Fields to remove after parsing</label>
+        <textarea id="definition-fields-to-remove" name="fieldsToRemove" rows="3" placeholder="One field name per line"></textarea>
+        <p class="id-hint">Matching field names are removed at every level of the parsed JSON output.</p>
         <div class="form-actions">
           <button id="save-parser-button" type="submit"><span>Save definition</span></button>
           <button id="cancel-form-button" class="secondary-button" type="button">Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="workspace library-view" id="detection-view" aria-labelledby="detection-title" hidden>
+      <div class="workspace-header">
+        <div>
+          <p class="step-label">03 <span>— INCIDENT RULES</span></p>
+          <h2 id="detection-title">Detection library</h2>
+        </div>
+        <button id="new-detection-button" class="secondary-button" type="button"><span aria-hidden="true">＋</span> New rule</button>
+      </div>
+      <p class="section-copy">Create and maintain rules for identifying incidents in your logs.</p>
+      <div id="detection-status" class="result" role="status" aria-live="polite" hidden></div>
+      <div id="detection-list" class="parser-list"></div>
+
+      <form id="detection-form" class="parser-form" hidden>
+        <div class="form-heading">
+          <div>
+            <p class="step-label">RULE CONFIGURATION</p>
+            <h3 id="detection-form-title">New detection rule</h3>
+          </div>
+          <button id="cancel-detection-edit-button" class="icon-button" type="button" aria-label="Cancel editing">×</button>
+        </div>
+        <p id="detection-id-hint" class="id-hint">Rule ID is assigned automatically when the rule is created.</p>
+        <label for="detection-name">Name</label>
+        <input id="detection-name" name="name" type="text" maxlength="120" required>
+        <label for="detection-logic">Rule logic</label>
+        <textarea id="detection-logic" name="ruleLogic" rows="4" placeholder="level EQUAL ERROR" required></textarea>
+        <label for="detection-description">Description</label>
+        <textarea id="detection-description" name="description" rows="3" required></textarea>
+        <div class="form-actions">
+          <button id="save-detection-button" type="submit"><span>Save rule</span></button>
+          <button id="cancel-detection-form-button" class="secondary-button" type="button">Cancel</button>
         </div>
       </form>
     </section>

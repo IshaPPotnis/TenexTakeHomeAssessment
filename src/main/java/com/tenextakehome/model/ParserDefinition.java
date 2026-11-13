@@ -5,6 +5,9 @@ import jakarta.validation.constraints.NotNull;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @RedisHash("parser-definitions")
 public class ParserDefinition {
 
@@ -18,13 +21,20 @@ public class ParserDefinition {
     @NotNull(message = "Parser type is required")
     private ParserType parserType;
 
+    private List<String> fieldsToRemove = new ArrayList<>();
+
     public ParserDefinition() {
     }
 
     public ParserDefinition(String parserName, Long parserId, ParserType parserType) {
+        this(parserName, parserId, parserType, List.of());
+    }
+
+    public ParserDefinition(String parserName, Long parserId, ParserType parserType, List<String> fieldsToRemove) {
         this.parserName = parserName;
         this.parserId = parserId;
         this.parserType = parserType;
+        setFieldsToRemove(fieldsToRemove);
     }
 
     public String getParserName() {
@@ -49,5 +59,13 @@ public class ParserDefinition {
 
     public void setParserType(ParserType parserType) {
         this.parserType = parserType;
+    }
+
+    public List<String> getFieldsToRemove() {
+        return fieldsToRemove;
+    }
+
+    public void setFieldsToRemove(List<String> fieldsToRemove) {
+        this.fieldsToRemove = fieldsToRemove == null ? new ArrayList<>() : new ArrayList<>(fieldsToRemove);
     }
 }

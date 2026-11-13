@@ -38,7 +38,8 @@ public class DefinitionService {
         ParserDefinition definition = new ParserDefinition(
                 request.getParserName(),
                 nextParserId(),
-                request.getParserType());
+                request.getParserType(),
+                request.getFieldsToRemove());
         return parserRepository.save(definition);
     }
 
@@ -46,6 +47,7 @@ public class DefinitionService {
         ParserDefinition definition = getDefinition(parserId);
         definition.setParserName(request.getParserName());
         definition.setParserType(request.getParserType());
+        definition.setFieldsToRemove(request.getFieldsToRemove());
         return parserRepository.save(definition);
     }
 

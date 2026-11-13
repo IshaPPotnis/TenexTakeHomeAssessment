@@ -16,8 +16,7 @@ class ParsingServiceTest {
     private final ParsingService parsingService = new ParsingService(java.util.List.of(
             new XmlParser(objectMapper),
             new JsonParser(objectMapper),
-            new CsvParser(objectMapper)
-    ));
+            new CsvParser(objectMapper)), objectMapper);
 
     @Test
     void parsesXmlLogToJson() {
@@ -32,6 +31,36 @@ class ParsingServiceTest {
         String output = parsingService.parseLog("{ \"level\" : \"INFO\" }", ParserType.JSON);
 
         assertEquals("{\"level\":\"INFO\"}", output);
+    }
+
+    @Test
+    void removesConfiguredFieldsFromParsedJsonObjectsRecursively() {
+        String output = parsingService.parseLog(
+                "{\"level\":\"INFO\",\"metadata\":{\"token\":\"secret\",\"host\":\"app\"},"
+                        + "\"events\":[{\"token\":\"nested-secret\",\"message\":\"started\"}]}",
+                ParserType.JSON,
+                java.util.List.of("token"));
+
+        assertEquals("{\"level\":\"INFO\",\"metadata\":{\"host\":\"app\"},"
+                + "\"events\":[{\"message\":\"started\"}]}", output);
+    }
+
+    @Test
+    void removesConfiguredFieldsFromConvertedXml() {
+        String output = parsingService.parseLog(
+                "<log><level>INFO</level><token>secret</token></log>",
+                ParserType.XML,
+                java.util.List.of("token"));
+
+        assertEquals("{\"log\":{\"level\":\"INFO\"}}", output);
+    }
+
+    @Test
+    void leavesParsedOutputUnchangedWhenNoFieldsAreConfiguredForRemoval() {
+        String output = parsingService.parseLog(
+                "{\"level\":\"INFO\",\"message\":\"started\"}", ParserType.JSON, java.util.List.of());
+
+        assertEquals("{\"level\":\"INFO\",\"message\":\"started\"}", output);
     }
 
     @Test

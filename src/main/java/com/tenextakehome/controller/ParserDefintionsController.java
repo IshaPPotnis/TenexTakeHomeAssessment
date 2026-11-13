@@ -22,11 +22,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/definitions")
 @Tag(name = "Definitions", description = "CRUD operations for parser definitions")
-public class DefinitionsController {
+public class ParserDefintionsController {
 
     private final DefinitionService definitionService;
 
-    public DefinitionsController(DefinitionService definitionService) {
+    public ParserDefintionsController(DefinitionService definitionService) {
         this.definitionService = definitionService;
     }
 

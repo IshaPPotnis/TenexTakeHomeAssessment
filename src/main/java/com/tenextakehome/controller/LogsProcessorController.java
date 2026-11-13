@@ -1,11 +1,17 @@
 package com.tenextakehome.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tenextakehome.dto.ProcessLogsRequest;
 import com.tenextakehome.dto.ProcessLogsResponse;
 import com.tenextakehome.dto.Result;
+import com.tenextakehome.model.DetectionRule;
 import com.tenextakehome.model.ParserDefinition;
+import com.tenextakehome.service.DetectionRuleService;
 import com.tenextakehome.service.DefinitionService;
 import com.tenextakehome.service.ParsingService;
+import com.tenextakehome.service.RuleEvaluator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -25,28 +31,55 @@ public class LogsProcessorController {
 
     private final DefinitionService definitionService;
     private final ParsingService parsingService;
+    private final DetectionRuleService detectionRuleService;
+    private final ObjectMapper objectMapper;
 
-    public LogsProcessorController(DefinitionService definitionService, ParsingService parsingService) {
+    public LogsProcessorController(
+            DefinitionService definitionService,
+            ParsingService parsingService,
+            DetectionRuleService detectionRuleService,
+            ObjectMapper objectMapper) {
         this.definitionService = definitionService;
         this.parsingService = parsingService;
+        this.detectionRuleService = detectionRuleService;
+        this.objectMapper = objectMapper;
     }
 
     @PostMapping("/process")
     @Operation(summary = "Process log entries")
     public ResponseEntity<ProcessLogsResponse> processLogs(@Valid @RequestBody ProcessLogsRequest request) {
         ParserDefinition parser = definitionService.getDefinition(request.getParserId());
+        List<DetectionRule> detectionRules = detectionRuleService.getAllRules();
         List<Result> results = request.getLogs().stream()
-                .map(log -> parseLog(log, parser))
+                .map(log -> parseLog(log, parser, detectionRules))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(new ProcessLogsResponse(results));
     }
 
-    private Result parseLog(String log, ParserDefinition parser) {
+    private Result parseLog(String log, ParserDefinition parser, List<DetectionRule> detectionRules) {
         try {
-            String parsedOutput = parsingService.parseLog(log, parser.getParserType());
-            return new Result(log, parsedOutput, "Parsed successfully using " + parser.getParserType() + ".");
+            String parsedOutput = parsingService.parseLog(
+                    log, parser.getParserType(), parser.getFieldsToRemove());
+            JsonNode parsedLog = objectMapper.readTree(parsedOutput);
+            List<String> matchedIncidents = detectionRules.stream()
+                    .filter(rule -> {
+                        try {
+                            return RuleEvaluator.evaluate(rule.getRuleLogic()).test(parsedLog);
+                        } catch (IllegalArgumentException exception) {
+                            throw new IllegalStateException(
+                                    "Invalid rule logic for detection rule " + rule.getId() + ": "
+                                            + exception.getMessage(),
+                                    exception);
+                        }
+                    })
+                    .map(rule -> rule.getId() + "-" + rule.getName())
+                    .collect(Collectors.toList());
+            return new Result(log, parsedOutput,
+                    "Parsed successfully using " + parser.getParserType() + ".", matchedIncidents);
         } catch (IllegalArgumentException exception) {
             return new Result(log, null, exception.getMessage());
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Parser returned invalid JSON output", exception);
         }
     }
 }

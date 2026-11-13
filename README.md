@@ -7,7 +7,7 @@ A Java-based Spring Boot REST API with a small JavaScript interface for submitti
 - Java 17
 - REST API for log processing
 - Redis-backed parser definition CRUD API
-- Browser UI for processing logs and managing parser definitions
+- Browser UI for processing logs, managing parser definitions, and maintaining detection rules
 - Swagger/OpenAPI documentation
 
 ## Project Structure
@@ -31,16 +31,34 @@ docker run --rm --name tenex-redis -p 6379:6379 redis:7-alpine
 - POST `/api/definitions` - Create a parser definition
 - PUT `/api/definitions/{parserId}` - Update a parser definition
 - DELETE `/api/definitions/{parserId}` - Delete a parser definition
+- GET `/api/detection-rules` - List detection rules
+- GET `/api/detection-rules/{id}` - Get a detection rule
+- POST `/api/detection-rules` - Create a detection rule
+- PUT `/api/detection-rules/{id}` - Update a detection rule
+- DELETE `/api/detection-rules/{id}` - Delete a detection rule
 
-The API connects to Redis at `localhost:6379` by default. Parser IDs are assigned incrementally by Redis, so create and update requests only provide the name and type:
+The API connects to Redis at `localhost:6379` by default. Parser IDs are assigned incrementally by Redis, so create and update requests provide the name and type, plus an optional list of fields to remove:
 ```json
 {
   "parserName": "XML parser",
-  "parserType": "XML"
+  "parserType": "XML",
+  "fieldsToRemove": ["password", "token"]
 }
 ```
+`fieldsToRemove` is optional. Matching keys are removed recursively from the parsed JSON output; omitted or empty lists leave the parsed output unchanged.
 
 On startup, the API creates any missing sample definitions (`sample xml parser`, `sample json parser`, and `sample csv parser`) in Redis. Existing sample definitions are preserved.
+
+On startup, the API also creates the `Failed Login attempt` detection rule if it does not already exist. It matches `EventID=4625 AND Channel=Security`; its four-digit ID is assigned by Redis.
+
+Detection rule IDs are generated incrementally as four-digit numbers. Create and update requests use this shape:
+```json
+{
+  "name": "High error rate",
+  "ruleLogic": "level EQUAL ERROR",
+  "description": "Detects error-level log entries."
+}
+```
 
 Example request:
 ```json
@@ -57,13 +75,16 @@ The response contains one result per log entry:
     {
       "log": "INFO Application started",
       "parsedOutput": "{\"Application started\":\"INFO\"}",
-      "notes": "Parsed successfully using XML."
+      "notes": "Parsed successfully using XML.",
+      "matchedIncident": []
     }
   ]
 }
 ```
 
-Each log entry is parsed according to the selected definition's `parserType` (`XML`, `JSON`, or `CSV`). CSV entries are returned as JSON arrays of field values.
+Each log entry is parsed according to the selected definition's `parserType` (`XML`, `JSON`, or `CSV`). CSV entries are returned as JSON arrays of field values. `matchedIncident` contains each matching rule as an `id-Name` string, or an empty list when no rule matches. Parsed output is displayed as a field/value table in the UI.
+
+The UI's Detection library tab supports listing, creating, updating, and deleting detection rules through `/api/detection-rules`.
 
 ## Run the UI
 Start the Spring Boot API on port 8080, then build and run the standalone UI container:

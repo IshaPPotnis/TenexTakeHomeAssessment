@@ -16,10 +16,13 @@ const server = http.createServer(async (request, response) => {
   const isProcessLogs = pathname === "/api/logs/process";
   const isDefinitionsCollection = pathname === "/api/definitions";
   const isDefinitionItem = /^\/api\/definitions\/\d+$/.test(pathname);
-  if (isProcessLogs || isDefinitionsCollection || isDefinitionItem) {
+  const isDetectionRulesCollection = pathname === "/api/detection-rules";
+  const isDetectionRuleItem = /^\/api\/detection-rules\/\d+$/.test(pathname);
+  if (isProcessLogs || isDefinitionsCollection || isDefinitionItem
+      || isDetectionRulesCollection || isDetectionRuleItem) {
     const allowedMethods = isProcessLogs
       ? ["POST"]
-      : isDefinitionsCollection
+      : isDefinitionsCollection || isDetectionRulesCollection
         ? ["GET", "POST"]
         : ["GET", "PUT", "DELETE"];
     if (!allowedMethods.includes(request.method)) {
