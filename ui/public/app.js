@@ -31,7 +31,12 @@ const detectionForm = document.querySelector("#detection-form");
 const detectionFormTitle = document.querySelector("#detection-form-title");
 const detectionIdHint = document.querySelector("#detection-id-hint");
 const detectionName = document.querySelector("#detection-name");
+const detectionType = document.querySelector("#detection-type");
 const detectionLogic = document.querySelector("#detection-logic");
+const followedByLogicField = document.querySelector("#followed-by-logic-field");
+const followedByRuleLogic = document.querySelector("#followed-by-rule-logic");
+const requiredOccurrences = document.querySelector("#required-occurrences");
+const followedByRequiredOccurrences = document.querySelector("#followed-by-required-occurrences");
 const detectionDescription = document.querySelector("#detection-description");
 const saveDetectionButton = document.querySelector("#save-detection-button");
 const loginView = document.querySelector("#login-view");
@@ -219,6 +224,21 @@ function renderOutputTable(output) {
   return table;
 }
 
+function renderParsedOutput(output) {
+  let value = output;
+  if (typeof value === "string") {
+    try {
+      value = JSON.parse(value);
+    } catch {
+      value = { value };
+    }
+  }
+  if (value === null || typeof value !== "object") {
+    value = { value: value ?? "" };
+  }
+  return renderOutputTable(value);
+}
+
 function flattenOutput(value, path, rows) {
   if (Array.isArray(value)) {
     if (value.length === 0) rows.push([path || "Value", "[]"]);
@@ -257,11 +277,22 @@ function renderDetectionRules() {
     meta.textContent = `ID ${rule.id} · ${isGlobal ? "GLOBAL" : rule.customerName}`;
     const logic = document.createElement("pre");
     logic.className = "rule-logic";
-    logic.textContent = rule.ruleLogic;
+    logic.textContent = `${rule.type || "SINGLE_EVENT"}: ${rule.ruleLogic}`;
+    details.append(name, meta, logic);
+    if (rule.type === "FOLLOWED_BY") {
+      const occurrenceCount = document.createElement("p");
+      occurrenceCount.textContent =
+        `Required matches: ${rule.requiredOccurrences || 1} first event, `
+        + `${rule.followedByRequiredOccurrences || 1} followed-by event`;
+      const followedByLogic = document.createElement("pre");
+      followedByLogic.className = "rule-logic";
+      followedByLogic.textContent = `FOLLOWED_BY: ${rule.followedByRuleLogic}`;
+      details.append(occurrenceCount, followedByLogic);
+    }
     const description = document.createElement("p");
     description.className = "rule-description";
     description.textContent = rule.description;
-    details.append(name, meta, logic, description);
+    details.append(description);
 
     const actions = document.createElement("div");
     actions.className = "parser-actions";
@@ -302,6 +333,8 @@ async function loadDetectionRules() {
 function openCreateDetectionForm() {
   editingDetectionId = null;
   detectionForm.reset();
+  detectionType.value = "SINGLE_EVENT";
+  updateFollowedByLogicVisibility();
   detectionFormTitle.textContent = "New detection rule";
   detectionIdHint.textContent = "Rule ID is assigned automatically when the rule is created.";
   saveDetectionButton.querySelector("span").textContent = "Save rule";
@@ -312,7 +345,12 @@ function openCreateDetectionForm() {
 function beginEditDetection(rule) {
   editingDetectionId = rule.id;
   detectionName.value = rule.name;
+  detectionType.value = rule.type || "SINGLE_EVENT";
   detectionLogic.value = rule.ruleLogic;
+  followedByRuleLogic.value = rule.followedByRuleLogic || "";
+  requiredOccurrences.value = rule.requiredOccurrences || 1;
+  followedByRequiredOccurrences.value = rule.followedByRequiredOccurrences || 1;
+  updateFollowedByLogicVisibility();
   detectionDescription.value = rule.description;
   detectionFormTitle.textContent = "Edit detection rule";
   detectionIdHint.textContent = `Rule ID ${rule.id} cannot be changed.`;
@@ -324,18 +362,40 @@ function beginEditDetection(rule) {
 function closeDetectionForm() {
   detectionForm.hidden = true;
   detectionForm.reset();
+  updateFollowedByLogicVisibility();
   editingDetectionId = null;
+}
+
+function updateFollowedByLogicVisibility() {
+  const isFollowedBy = detectionType.value === "FOLLOWED_BY";
+  followedByLogicField.hidden = !isFollowedBy;
+  followedByRuleLogic.required = isFollowedBy;
 }
 
 async function saveDetectionRule(event) {
   event.preventDefault();
   const rule = {
     name: detectionName.value.trim(),
+    type: detectionType.value,
     ruleLogic: detectionLogic.value.trim(),
+    followedByRuleLogic: detectionType.value === "FOLLOWED_BY"
+      ? followedByRuleLogic.value.trim()
+      : null,
+    requiredOccurrences: detectionType.value === "FOLLOWED_BY"
+      ? Number(requiredOccurrences.value)
+      : 1,
+    followedByRequiredOccurrences: detectionType.value === "FOLLOWED_BY"
+      ? Number(followedByRequiredOccurrences.value)
+      : 1,
     description: detectionDescription.value.trim()
   };
-  if (!rule.name || !rule.ruleLogic || !rule.description) {
-    showStatus(detectionStatus, "Name, rule logic, and description are required.", true);
+  if (!rule.name || !rule.ruleLogic || !rule.description
+      || (rule.type === "FOLLOWED_BY"
+        && (!rule.followedByRuleLogic || !Number.isInteger(rule.requiredOccurrences)
+          || rule.requiredOccurrences < 1
+          || !Number.isInteger(rule.followedByRequiredOccurrences)
+          || rule.followedByRequiredOccurrences < 1))) {
+    showStatus(detectionStatus, "Name, rule logic, description, and followed-by logic when required are required.", true);
     return;
   }
 
@@ -564,13 +624,7 @@ function renderResults(results) {
       parsed.className = "output-block output-placeholder";
       parsed.textContent = "No parsed output";
     } else {
-      try {
-        parsed = renderOutputTable(JSON.parse(item.parsedOutput));
-      } catch {
-        parsed = document.createElement("pre");
-        parsed.className = "output-block";
-        parsed.textContent = item.parsedOutput;
-      }
+      parsed = renderParsedOutput(item.parsedOutput);
     }
 
     card.append(heading, originalLabel, original, parsedLabel, parsed, incidentsLabel, incidents);
@@ -638,6 +692,7 @@ document.querySelector("#new-detection-button").addEventListener("click", openCr
 document.querySelector("#cancel-detection-edit-button").addEventListener("click", closeDetectionForm);
 document.querySelector("#cancel-detection-form-button").addEventListener("click", closeDetectionForm);
 detectionForm.addEventListener("submit", saveDetectionRule);
+detectionType.addEventListener("change", updateFollowedByLogicVisibility);
 
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();

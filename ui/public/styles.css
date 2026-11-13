@@ -110,6 +110,11 @@ footer { display: flex; justify-content: space-between; margin: 25px 3px 35px; c
 .parser-form > label { margin-top: 5px; color: #a4b0c1; font: 10px "DM Mono", monospace; letter-spacing: .5px; }
 .parser-form > input, .parser-form > select, .parser-form > textarea { width: 100%; max-width: 520px; padding: 10px 12px; border: 1px solid #2c3b51; border-radius: 7px; outline: none; color: #d3deec; background: #101a2a; font: 12px/1.6 "DM Mono", monospace; }
 .parser-form > textarea { min-height: 76px; resize: vertical; }
+.conditional-form-field { display: grid; gap: 9px; }
+.conditional-form-field > label { margin-top: 5px; color: #a4b0c1; font: 10px "DM Mono", monospace; letter-spacing: .5px; }
+.conditional-form-field > input, .conditional-form-field > textarea { width: 100%; max-width: 520px; padding: 10px 12px; border: 1px solid #2c3b51; border-radius: 7px; outline: none; color: #d3deec; background: #101a2a; font: 12px/1.6 "DM Mono", monospace; }
+.conditional-form-field > textarea { min-height: 76px; resize: vertical; }
+.conditional-form-field > input:focus, .conditional-form-field > textarea:focus { border-color: #728e4c; box-shadow: 0 0 0 3px #c0f56c12; }
 .parser-form > input:focus, .parser-form > select:focus, .parser-form > textarea:focus { border-color: #728e4c; box-shadow: 0 0 0 3px #c0f56c12; }
 .icon-button { width: 32px; height: 32px; padding: 0; color: #8290a6; font-size: 20px; }
 .form-actions { display: flex; gap: 8px; margin-top: 13px; }

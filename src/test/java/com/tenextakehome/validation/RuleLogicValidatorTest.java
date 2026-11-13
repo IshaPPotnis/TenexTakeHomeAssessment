@@ -1,6 +1,7 @@
 package com.tenextakehome.validation;
 
 import com.tenextakehome.dto.DetectionRuleRequest;
+import com.tenextakehome.model.DetectionRuleType;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
@@ -43,5 +44,33 @@ class RuleLogicValidatorTest {
 
         assertTrue(validator.validate(request).stream()
                 .anyMatch(violation -> "ruleLogic".equals(violation.getPropertyPath().toString())));
+    }
+
+    @Test
+    void requiresFollowedByLogicForFollowedByRules() {
+        DetectionRuleRequest request = new DetectionRuleRequest(
+                "Sequence rule",
+                "event EQUAL start",
+                null,
+                DetectionRuleType.FOLLOWED_BY,
+                "description");
+
+        assertTrue(validator.validate(request).stream()
+                .anyMatch(violation -> "followedByRuleLogicValid".equals(
+                        violation.getPropertyPath().toString())));
+    }
+
+    @Test
+    void validatesFollowedByRuleLogic() {
+        DetectionRuleRequest request = new DetectionRuleRequest(
+                "Sequence rule",
+                "event EQUAL start",
+                "event LIKE end",
+                DetectionRuleType.FOLLOWED_BY,
+                "description");
+
+        assertTrue(validator.validate(request).stream()
+                .anyMatch(violation -> "followedByRuleLogic".equals(
+                        violation.getPropertyPath().toString())));
     }
 }

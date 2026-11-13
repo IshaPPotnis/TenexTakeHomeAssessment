@@ -101,7 +101,8 @@ const server = http.createServer(async (request, response) => {
     }
 
     response.writeHead(200, {
-      "Content-Type": contentTypes[path.extname(filePath)] || "application/octet-stream"
+      "Content-Type": contentTypes[path.extname(filePath)] || "application/octet-stream",
+      "Cache-Control": "no-store"
     });
     response.end(request.method === "HEAD" ? undefined : file);
   });

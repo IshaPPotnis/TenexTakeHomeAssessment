@@ -1,6 +1,7 @@
 package com.tenextakehome.config;
 
 import com.tenextakehome.dto.DetectionRuleRequest;
+import com.tenextakehome.model.DetectionRuleType;
 import com.tenextakehome.service.DetectionRuleService;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -13,6 +14,11 @@ public class DetectionRuleInitializer implements ApplicationRunner {
     private static final String RULE_LOGIC = "EventID=\"4625\" AND Channel=\"Security\"";
     private static final String RULE_DESCRIPTION =
             "Detects failed login attempts in the Security channel (Windows Event ID 4625).";
+    private static final String SEQUENCE_RULE_NAME = "Five Failed Logins Followed By Success";
+    private static final String SEQUENCE_RULE_LOGIC = "EventID=\"4625\"";
+    private static final String SEQUENCE_RULE_FOLLOWED_BY_LOGIC = "EventID=\"4624\"";
+    private static final String SEQUENCE_RULE_DESCRIPTION =
+            "Detects five failed login events followed by a successful login event.";
 
     private final DetectionRuleService detectionRuleService;
 
@@ -24,5 +30,13 @@ public class DetectionRuleInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         detectionRuleService.initializeGlobalRule(
                 new DetectionRuleRequest(RULE_NAME, RULE_LOGIC, RULE_DESCRIPTION));
+        detectionRuleService.initializeGlobalRule(new DetectionRuleRequest(
+                SEQUENCE_RULE_NAME,
+                SEQUENCE_RULE_LOGIC,
+                SEQUENCE_RULE_FOLLOWED_BY_LOGIC,
+                DetectionRuleType.FOLLOWED_BY,
+                5,
+                1,
+                SEQUENCE_RULE_DESCRIPTION));
     }
 }

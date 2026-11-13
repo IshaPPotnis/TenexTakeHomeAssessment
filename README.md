@@ -115,7 +115,7 @@ Response (`200`):
   "results": [
     {
       "log": "{\"EventID\":\"4625\",\"Channel\":\"Security\"}",
-      "parsedOutput": "{\"EventID\":\"4625\",\"Channel\":\"Security\"}",
+      "parsedOutput": {"EventID":"4625","Channel":"Security"},
       "notes": "Parsed successfully using JSON.",
       "matchedIncident": ["1000-Failed Login attempt"]
     }
@@ -123,7 +123,21 @@ Response (`200`):
 }
 ```
 
-Each result corresponds to one input line. `parsedOutput` is a JSON-encoded string. `matchedIncident` contains matching rules as `id-Name` strings, or an empty array when none match. CSV output is a JSON array when no columns are configured; when columns are configured, it is a JSON object keyed by those column names.
+Each result corresponds to one input line. `parsedOutput` is a JSON object (`Map<String, Object>`). `matchedIncident` contains matching rules as `id-Name` strings, or an empty array when none match. CSV output is stored under a `values` key when no columns are configured; when columns are configured, it is an object keyed by those column names.
+
+#### Log-processing sequence
+
+The log-processing sequence is:
+
+1. The user selects a parser and submits an ordered batch of log lines in the UI.
+2. The UI sends the logs and parser ID to `POST /api/logs/process`.
+3. The API verifies that the parser is visible to the authenticated customer and loads that customer's visible rules.
+4. The API parses each log in order and applies the parser's configured field exclusions.
+5. The API evaluates each `SINGLE_EVENT` rule against every parsed log.
+6. For each `FOLLOWED_BY` rule, the API counts logs matching `ruleLogic`. Once `requiredOccurrences` is reached, it counts later logs matching `followedByRuleLogic` until `followedByRequiredOccurrences` is reached.
+7. The API returns one result per input log. The UI displays each parsed output and any matched incidents.
+
+For a sequence rule, the log that reaches `requiredOccurrences` starts the followed-by phase; only later logs count toward `followedByRequiredOccurrences`. When that second threshold is met, the incident is attached to that log's result and the sequence counters reset. Both thresholds count matching log entries, not individual conditions inside one entry, and are evaluated only within the submitted batch.
 
 If any log cannot be parsed, the endpoint responds with `500 Internal Server Error` and a JSON error body instead of returning partial results. The UI displays the error message from the response. For example:
 
@@ -193,12 +207,27 @@ Detection-rule create and update request:
 ```json
 {
   "name": "High error rate",
+  "type": "SINGLE_EVENT",
   "ruleLogic": "level EQUAL ERROR",
   "description": "Detects error-level log entries."
 }
 ```
 
-All three fields are required, and `ruleLogic` must use valid rule syntax. Rule IDs are assigned incrementally as four-digit numbers (`1000`–`9999`) and should not be supplied in create/update request bodies. Rule logic compares parsed log fields to values. Supported comparison operators are `=`, `!=`, `<`, `>`, and their names `EQUAL`, `NOT_EQUAL`, `LESS_THAN`, `GREATER_THAN`. Conditions can be combined with `AND` and `OR`; field paths can use dot notation for nested JSON objects. Ordered comparisons require both values to be numbers or both to be strings; missing or incompatible values do not match.
+`type` can be `SINGLE_EVENT` or `FOLLOWED_BY`; omitted types default to `SINGLE_EVENT` for backward compatibility. `name`, `ruleLogic`, and `description` are required, and rule expressions must use valid syntax. `FOLLOWED_BY` rules also require a valid `followedByRuleLogic` expression:
+
+```json
+{
+  "name": "Failed login followed by success",
+  "type": "FOLLOWED_BY",
+  "ruleLogic": "status EQUAL 401",
+  "followedByRuleLogic": "status EQUAL 200",
+  "requiredOccurrences": 1,
+  "followedByRequiredOccurrences": 1,
+  "description": "Detects a successful response after a failed login."
+}
+```
+
+The expressions are evaluated against parsed logs in submission order. `requiredOccurrences` is the number of log entries that must match `ruleLogic` before the followed-by phase starts; `followedByRequiredOccurrences` is the number of later log entries that must match `followedByRuleLogic`. Both counts default to `1`, and the incident is attached to the log that satisfies the followed-by count. The sequence state resets after a match and does not carry over to another API request. Rule IDs are assigned incrementally as four-digit numbers (`1000`–`9999`) and should not be supplied in create/update request bodies. Rule logic compares parsed log fields to values. Supported comparison operators are `=`, `!=`, `<`, `>`, and their names `EQUAL`, `NOT_EQUAL`, `LESS_THAN`, `GREATER_THAN`. Conditions can be combined with `AND` and `OR`; field paths can use dot notation for nested JSON objects. Ordered comparisons require both values to be numbers or both to be strings; missing or incompatible values do not match.
 
 | Method and path | Request | Response and meaning |
 |---|---|---|
@@ -220,8 +249,9 @@ At application startup, the API ensures the following shared `GLOBAL` records ex
 - `sample json parser` with type `JSON`
 - `sample csv parser` with type `CSV` and columns matching the access-log sample resource
 - `Failed Login attempt`, with logic `EventID="4625" AND Channel="Security"`
+- `Five Failed Logins Followed By Success`, requiring five `EventID="4625"` logs followed by one later `EventID="4624"` log
 
-Missing sample parser definitions are created at startup without overwriting existing definitions. The built-in `Failed Login attempt` rule is created if missing and reset to the documented name, logic, and description on every startup; its existing ID is preserved.
+Missing sample parser definitions are created at startup without overwriting existing definitions. The built-in `Failed Login attempt` and `Five Failed Logins Followed By Success` rules are created if missing and reset to their documented definitions on every startup; existing IDs are preserved.
 
 ## API documentation
 

@@ -6,6 +6,7 @@ import com.tenextakehome.dto.ProcessLogsResponse;
 import com.tenextakehome.dto.Result;
 import com.tenextakehome.exception.LogProcessingException;
 import com.tenextakehome.model.DetectionRule;
+import com.tenextakehome.model.DetectionRuleType;
 import com.tenextakehome.model.ParserDefinition;
 import com.tenextakehome.model.ParserType;
 import com.tenextakehome.service.AuthTokenService;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -46,7 +48,7 @@ class LogsProcessorControllerTest {
         when(definitionService.getDefinition(1L, "admin-dev")).thenReturn(parser);
         when(parsingService.parseLog(
                 "{\"EventID\":4625,\"Channel\":\"Security\"}", ParserType.JSON, List.of(), List.of()))
-                .thenReturn("{\"EventID\":4625,\"Channel\":\"Security\"}");
+                .thenReturn(Map.of("EventID", 4625, "Channel", "Security"));
         when(detectionRuleService.getAllRules("admin-dev")).thenReturn(List.of(
                 new DetectionRule("Failed Login attempt", 1000L,
                         "EventID=4625 AND Channel=Security", "Failed login"),
@@ -59,6 +61,126 @@ class LogsProcessorControllerTest {
 
         Result result = response.getBody().getResults().get(0);
         assertEquals(List.of("1000-Failed Login attempt", "1001-Security event"), result.getMatchedIncident());
+    }
+
+    @Test
+    void matchesFollowedByRuleOnLaterLogInBatch() {
+        ParserDefinition parser = new ParserDefinition("JSON parser", 1L, ParserType.JSON);
+        when(definitionService.getDefinition(1L, "admin-dev")).thenReturn(parser);
+        when(parsingService.parseLog("start", ParserType.JSON, List.of(), List.of()))
+                .thenReturn(Map.of("event", "start"));
+        when(parsingService.parseLog("middle", ParserType.JSON, List.of(), List.of()))
+                .thenReturn(Map.of("event", "middle"));
+        when(parsingService.parseLog("end", ParserType.JSON, List.of(), List.of()))
+                .thenReturn(Map.of("event", "end"));
+        when(detectionRuleService.getAllRules("admin-dev")).thenReturn(List.of(
+                new DetectionRule(
+                        "Start then end",
+                        1002L,
+                        "event=start",
+                        "event=end",
+                        DetectionRuleType.FOLLOWED_BY,
+                        "Detects a start event followed by an end event.")));
+
+        ResponseEntity<ProcessLogsResponse> response = controller.processLogs(
+                new ProcessLogsRequest(List.of("start", "middle", "end"), 1L),
+                "admin-dev");
+
+        List<Result> results = response.getBody().getResults();
+        assertEquals(List.of(), results.get(0).getMatchedIncident());
+        assertEquals(List.of(), results.get(1).getMatchedIncident());
+        assertEquals(List.of("1002-Start then end"), results.get(2).getMatchedIncident());
+    }
+
+    @Test
+    void requiresFiveFirstEventsBeforeMatchingFollowedByEvent() {
+        ParserDefinition parser = new ParserDefinition("JSON parser", 1L, ParserType.JSON);
+        when(definitionService.getDefinition(1L, "admin-dev")).thenReturn(parser);
+        for (int i = 1; i <= 5; i++) {
+            when(parsingService.parseLog("failed-" + i, ParserType.JSON, List.of(), List.of()))
+                    .thenReturn(Map.of("EventID", "4625"));
+        }
+        when(parsingService.parseLog("success", ParserType.JSON, List.of(), List.of()))
+                .thenReturn(Map.of("EventID", "4624"));
+        when(detectionRuleService.getAllRules("admin-dev")).thenReturn(List.of(
+                new DetectionRule(
+                        "Five failures then success",
+                        1003L,
+                        "EventID=\"4625\"",
+                        "EventID=\"4624\"",
+                        DetectionRuleType.FOLLOWED_BY,
+                        5,
+                        1,
+                        "Five failures followed by a success.")));
+
+        ResponseEntity<ProcessLogsResponse> response = controller.processLogs(
+                new ProcessLogsRequest(
+                        List.of("failed-1", "failed-2", "failed-3", "failed-4", "failed-5", "success"),
+                        1L),
+                "admin-dev");
+
+        List<Result> results = response.getBody().getResults();
+        assertEquals(List.of(), results.get(0).getMatchedIncident());
+        assertEquals(List.of(), results.get(4).getMatchedIncident());
+        assertEquals(List.of("1003-Five failures then success"), results.get(5).getMatchedIncident());
+    }
+
+    @Test
+    void doesNotMatchFiveFailureRuleAfterOnlyFourFirstEvents() {
+        ParserDefinition parser = new ParserDefinition("JSON parser", 1L, ParserType.JSON);
+        when(definitionService.getDefinition(1L, "admin-dev")).thenReturn(parser);
+        for (int i = 1; i <= 4; i++) {
+            when(parsingService.parseLog("failed-" + i, ParserType.JSON, List.of(), List.of()))
+                    .thenReturn(Map.of("EventID", "4625"));
+        }
+        when(parsingService.parseLog("success", ParserType.JSON, List.of(), List.of()))
+                .thenReturn(Map.of("EventID", "4624"));
+        when(detectionRuleService.getAllRules("admin-dev")).thenReturn(List.of(
+                new DetectionRule(
+                        "Five failures then success",
+                        1003L,
+                        "EventID=\"4625\"",
+                        "EventID=\"4624\"",
+                        DetectionRuleType.FOLLOWED_BY,
+                        5,
+                        1,
+                        "Five failures followed by a success.")));
+
+        ResponseEntity<ProcessLogsResponse> response = controller.processLogs(
+                new ProcessLogsRequest(List.of("failed-1", "failed-2", "failed-3", "failed-4", "success"), 1L),
+                "admin-dev");
+
+        assertEquals(List.of(), response.getBody().getResults().get(4).getMatchedIncident());
+    }
+
+    @Test
+    void requiresConfiguredNumberOfFollowedByEvents() {
+        ParserDefinition parser = new ParserDefinition("JSON parser", 1L, ParserType.JSON);
+        when(definitionService.getDefinition(1L, "admin-dev")).thenReturn(parser);
+        when(parsingService.parseLog("failed", ParserType.JSON, List.of(), List.of()))
+                .thenReturn(Map.of("EventID", "4625"));
+        when(parsingService.parseLog("success-1", ParserType.JSON, List.of(), List.of()))
+                .thenReturn(Map.of("EventID", "4624"));
+        when(parsingService.parseLog("success-2", ParserType.JSON, List.of(), List.of()))
+                .thenReturn(Map.of("EventID", "4624"));
+        when(detectionRuleService.getAllRules("admin-dev")).thenReturn(List.of(
+                new DetectionRule(
+                        "Failure then two successes",
+                        1004L,
+                        "EventID=\"4625\"",
+                        "EventID=\"4624\"",
+                        DetectionRuleType.FOLLOWED_BY,
+                        1,
+                        2,
+                        "A failure followed by two successful logins.")));
+
+        ResponseEntity<ProcessLogsResponse> response = controller.processLogs(
+                new ProcessLogsRequest(List.of("failed", "success-1", "success-2"), 1L),
+                "admin-dev");
+
+        List<Result> results = response.getBody().getResults();
+        assertEquals(List.of(), results.get(1).getMatchedIncident());
+        assertEquals(List.of("1004-Failure then two successes"), results.get(2).getMatchedIncident());
     }
 
     @Test
@@ -82,7 +204,10 @@ class LogsProcessorControllerTest {
         when(definitionService.getDefinition(2L, "admin-dev")).thenReturn(parser);
         when(parsingService.parseLog(
                 "4625,Security,Failed login", ParserType.CSV, List.of(), columns))
-                .thenReturn("{\"EventID\":\"4625\",\"Channel\":\"Security\",\"Message\":\"Failed login\"}");
+                .thenReturn(Map.of(
+                        "EventID", "4625",
+                        "Channel", "Security",
+                        "Message", "Failed login"));
         when(detectionRuleService.getAllRules("admin-dev")).thenReturn(List.of());
 
         controller.processLogs(

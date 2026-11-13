@@ -2,22 +2,23 @@ package com.tenextakehome.dto;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class Result {
 
     private String log;
-    private String parsedOutput;
+    private Map<String, Object> parsedOutput;
     private String notes;
     private List<String> matchedIncident = new ArrayList<>();
 
     public Result() {
     }
 
-    public Result(String log, String parsedOutput, String notes) {
+    public Result(String log, Map<String, Object> parsedOutput, String notes) {
         this(log, parsedOutput, notes, List.of());
     }
 
-    public Result(String log, String parsedOutput, String notes, List<String> matchedIncident) {
+    public Result(String log, Map<String, Object> parsedOutput, String notes, List<String> matchedIncident) {
         this.log = log;
         this.parsedOutput = parsedOutput;
         this.notes = notes;
@@ -32,11 +33,11 @@ public class Result {
         this.log = log;
     }
 
-    public String getParsedOutput() {
+    public Map<String, Object> getParsedOutput() {
         return parsedOutput;
     }
 
-    public void setParsedOutput(String parsedOutput) {
+    public void setParsedOutput(Map<String, Object> parsedOutput) {
         this.parsedOutput = parsedOutput;
     }
 

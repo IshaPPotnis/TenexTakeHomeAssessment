@@ -155,8 +155,22 @@
         <p id="detection-id-hint" class="id-hint">Rule ID is assigned automatically when the rule is created.</p>
         <label for="detection-name">Name</label>
         <input id="detection-name" name="name" type="text" maxlength="120" required>
+        <label for="detection-type">Rule type</label>
+        <select id="detection-type" name="type" required>
+          <option value="SINGLE_EVENT">Single event</option>
+          <option value="FOLLOWED_BY">Followed by</option>
+        </select>
         <label for="detection-logic">Rule logic</label>
         <textarea id="detection-logic" name="ruleLogic" rows="4" placeholder="level EQUAL ERROR" required></textarea>
+        <div id="followed-by-logic-field" class="conditional-form-field" hidden>
+          <label for="required-occurrences">Required first-event matches</label>
+          <input id="required-occurrences" name="requiredOccurrences" type="number" min="1" value="1">
+          <label for="followed-by-required-occurrences">Required followed-by matches</label>
+          <input id="followed-by-required-occurrences" name="followedByRequiredOccurrences" type="number" min="1" value="1">
+          <label for="followed-by-rule-logic">Followed by rule logic</label>
+          <textarea id="followed-by-rule-logic" name="followedByRuleLogic" rows="4" placeholder="status EQUAL 401"></textarea>
+          <p class="id-hint">Matches when a later log in the submitted batch satisfies this condition after the first rule.</p>
+        </div>
         <label for="detection-description">Description</label>
         <textarea id="detection-description" name="description" rows="3" required></textarea>
         <div class="form-actions">

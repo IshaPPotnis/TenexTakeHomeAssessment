@@ -67,6 +67,10 @@ public class DetectionRuleService {
 
         rule.setName(request.getName());
         rule.setRuleLogic(request.getRuleLogic());
+        rule.setFollowedByRuleLogic(request.getFollowedByRuleLogic());
+        rule.setType(request.getType());
+        rule.setRequiredOccurrences(request.getRequiredOccurrences());
+        rule.setFollowedByRequiredOccurrences(request.getFollowedByRequiredOccurrences());
         rule.setDescription(request.getDescription());
         return detectionRuleRepository.save(rule);
     }
@@ -76,6 +80,10 @@ public class DetectionRuleService {
                 request.getName(),
                 nextRuleId(),
                 request.getRuleLogic(),
+                request.getFollowedByRuleLogic(),
+                request.getType(),
+                request.getRequiredOccurrences(),
+                request.getFollowedByRequiredOccurrences(),
                 request.getDescription());
         rule.setCustomerName(customerName);
         return detectionRuleRepository.save(rule);
@@ -96,6 +104,10 @@ public class DetectionRuleService {
         }
         rule.setName(request.getName());
         rule.setRuleLogic(request.getRuleLogic());
+        rule.setFollowedByRuleLogic(request.getFollowedByRuleLogic());
+        rule.setType(request.getType());
+        rule.setRequiredOccurrences(request.getRequiredOccurrences());
+        rule.setFollowedByRequiredOccurrences(request.getFollowedByRequiredOccurrences());
         rule.setDescription(request.getDescription());
         return detectionRuleRepository.save(rule);
     }

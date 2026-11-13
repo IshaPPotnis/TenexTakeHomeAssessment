@@ -1,12 +1,12 @@
 package com.tenextakehome.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tenextakehome.dto.ProcessLogsRequest;
 import com.tenextakehome.dto.ProcessLogsResponse;
 import com.tenextakehome.dto.Result;
 import com.tenextakehome.model.DetectionRule;
+import com.tenextakehome.model.DetectionRuleType;
 import com.tenextakehome.model.ParserDefinition;
 import com.tenextakehome.model.ParserType;
 import com.tenextakehome.exception.LogProcessingException;
@@ -32,6 +32,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @RestController
@@ -63,9 +65,72 @@ public class LogsProcessorController {
         ParserDefinition parser = definitionService.getDefinition(request.getParserId(), customerName);
         List<DetectionRule> detectionRules = detectionRuleService.getAllRules(customerName);
         List<Result> results = request.getLogs().stream()
-                .map(log -> parseLog(log, parser, detectionRules))
+                .map(log -> parseLog(log, parser))
                 .collect(Collectors.toList());
+        applyDetectionRules(results, detectionRules);
         return ResponseEntity.ok(new ProcessLogsResponse(results));
+    }
+
+    private void applyDetectionRules(List<Result> results, List<DetectionRule> detectionRules) {
+        List<JsonNode> parsedLogs = results.stream()
+                .map(result -> objectMapper.<JsonNode>valueToTree(result.getParsedOutput()))
+                .toList();
+
+        for (DetectionRule rule : detectionRules) {
+            Predicate<JsonNode> firstCondition = compileRule(rule, rule.getRuleLogic());
+            if (rule.getType() == DetectionRuleType.FOLLOWED_BY) {
+                Predicate<JsonNode> followedByCondition = compileRule(rule, rule.getFollowedByRuleLogic());
+                applyFollowedByRule(results, parsedLogs, rule, firstCondition, followedByCondition);
+            } else {
+                for (int i = 0; i < parsedLogs.size(); i++) {
+                    if (firstCondition.test(parsedLogs.get(i))) {
+                        results.get(i).getMatchedIncident().add(rule.getId() + "-" + rule.getName());
+                    }
+                }
+            }
+        }
+    }
+
+    private Predicate<JsonNode> compileRule(DetectionRule rule, String ruleLogic) {
+        try {
+            return RuleEvaluator.evaluate(ruleLogic);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalStateException(
+                    "Invalid rule logic for detection rule " + rule.getId() + ": " + exception.getMessage(),
+                    exception);
+        }
+    }
+
+    private void applyFollowedByRule(
+            List<Result> results,
+            List<JsonNode> parsedLogs,
+            DetectionRule rule,
+            Predicate<JsonNode> firstCondition,
+            Predicate<JsonNode> followedByCondition) {
+        int firstEventCount = 0;
+        int followedByEventCount = 0;
+        int requiredOccurrences = rule.getRequiredOccurrences();
+        int followedByRequiredOccurrences = rule.getFollowedByRequiredOccurrences();
+        boolean firstConditionSatisfied = false;
+        for (int i = 0; i < parsedLogs.size(); i++) {
+            JsonNode parsedLog = parsedLogs.get(i);
+            boolean sequenceWasReady = firstConditionSatisfied;
+            if (sequenceWasReady && followedByCondition.test(parsedLog)) {
+                followedByEventCount++;
+                if (followedByEventCount >= followedByRequiredOccurrences) {
+                    results.get(i).getMatchedIncident().add(rule.getId() + "-" + rule.getName());
+                    firstEventCount = 0;
+                    followedByEventCount = 0;
+                    firstConditionSatisfied = false;
+                }
+            }
+            if (!sequenceWasReady && firstCondition.test(parsedLog)) {
+                firstEventCount++;
+                if (firstEventCount >= requiredOccurrences) {
+                    firstConditionSatisfied = true;
+                }
+            }
+        }
     }
 
     @GetMapping(value = "/sample/{parserType}", produces = MediaType.TEXT_PLAIN_VALUE)
@@ -85,32 +150,16 @@ public class LogsProcessorController {
         }
     }
 
-    private Result parseLog(String log, ParserDefinition parser, List<DetectionRule> detectionRules) {
+    private Result parseLog(String log, ParserDefinition parser) {
         try {
-            String parsedOutput = parsingService.parseLog(
+            Map<String, Object> parsedOutput = parsingService.parseLog(
                     log, parser.getParserType(), parser.getFieldsToRemove(), parser.getColumns());
-            JsonNode parsedLog = objectMapper.readTree(parsedOutput);
-            List<String> matchedIncidents = detectionRules.stream()
-                    .filter(rule -> {
-                        try {
-                            return RuleEvaluator.evaluate(rule.getRuleLogic()).test(parsedLog);
-                        } catch (IllegalArgumentException exception) {
-                            throw new IllegalStateException(
-                                    "Invalid rule logic for detection rule " + rule.getId() + ": "
-                                            + exception.getMessage(),
-                                    exception);
-                        }
-                    })
-                    .map(rule -> rule.getId() + "-" + rule.getName())
-                    .collect(Collectors.toList());
             return new Result(log, parsedOutput,
-                    "Parsed successfully using " + parser.getParserType() + ".", matchedIncidents);
+                    "Parsed successfully using " + parser.getParserType() + ".");
         } catch (IllegalArgumentException exception) {
             throw new LogProcessingException(
                     "Log processing failed for " + parser.getParserType() + " input: " + exception.getMessage(),
                     exception);
-        } catch (JsonProcessingException exception) {
-            throw new IllegalStateException("Parser returned invalid JSON output", exception);
         }
     }
 }
