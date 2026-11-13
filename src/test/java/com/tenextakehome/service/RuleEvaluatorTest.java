@@ -40,6 +40,15 @@ class RuleEvaluatorTest {
     }
 
     @Test
+    void orderedComparisonWithMissingOrIncompatibleFieldDoesNotMatch() throws Exception {
+        Predicate<JsonNode> missingFieldRule = RuleEvaluator.evaluate("level > 4");
+        Predicate<JsonNode> incompatibleFieldRule = RuleEvaluator.evaluate("level > 4");
+
+        assertFalse(missingFieldRule.test(objectMapper.readTree("{\"message\":\"error\"}")));
+        assertFalse(incompatibleFieldRule.test(objectMapper.readTree("{\"level\":\"high\"}")));
+    }
+
+    @Test
     void rejectsMalformedRuleLogic() {
         assertThrows(IllegalArgumentException.class,
                 () -> RuleEvaluator.evaluate("EventID=4625 AND"));

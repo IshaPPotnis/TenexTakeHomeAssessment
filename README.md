@@ -198,7 +198,7 @@ Detection-rule create and update request:
 }
 ```
 
-All three fields are required. Rule IDs are assigned incrementally as four-digit numbers (`1000`–`9999`) and should not be supplied in create/update request bodies. Rule logic compares parsed log fields to values. Supported comparison operators are `=`, `!=`, `<`, `>`, and their names `EQUAL`, `NOT_EQUAL`, `LESS_THAN`, `GREATER_THAN`. Conditions can be combined with `AND` and `OR`; field paths can use dot notation for nested JSON objects.
+All three fields are required, and `ruleLogic` must use valid rule syntax. Rule IDs are assigned incrementally as four-digit numbers (`1000`–`9999`) and should not be supplied in create/update request bodies. Rule logic compares parsed log fields to values. Supported comparison operators are `=`, `!=`, `<`, `>`, and their names `EQUAL`, `NOT_EQUAL`, `LESS_THAN`, `GREATER_THAN`. Conditions can be combined with `AND` and `OR`; field paths can use dot notation for nested JSON objects. Ordered comparisons require both values to be numbers or both to be strings; missing or incompatible values do not match.
 
 | Method and path | Request | Response and meaning |
 |---|---|---|
@@ -219,7 +219,7 @@ At application startup, the API ensures the following shared `GLOBAL` records ex
 - `sample xml parser` with type `XML`
 - `sample json parser` with type `JSON`
 - `sample csv parser` with type `CSV` and columns `EventID`, `Channel`, and `Message`
-- `Failed Login attempt`, with logic `EventID=4625 AND Channel=Security`
+- `Failed Login attempt`, with logic `EventID="4625" AND Channel="Security"`
 
 Missing sample parser definitions are created at startup without overwriting existing definitions. The built-in `Failed Login attempt` rule is created if missing and reset to the documented name, logic, and description on every startup; its existing ID is preserved.
 

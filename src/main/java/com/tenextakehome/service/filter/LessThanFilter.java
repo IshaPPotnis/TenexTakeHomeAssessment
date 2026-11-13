@@ -9,6 +9,8 @@ public class LessThanFilter implements Filter {
 
     @Override
     public boolean execute(Object actualValue, Object expectedValue) {
-        return FilterComparison.compare(actualValue, expectedValue) < 0;
+        return FilterComparison.compare(actualValue, expectedValue)
+                .stream()
+                .anyMatch(comparison -> comparison < 0);
     }
 }
