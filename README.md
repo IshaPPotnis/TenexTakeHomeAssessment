@@ -139,6 +139,8 @@ The log-processing sequence is:
 
 For a sequence rule, the log that reaches `requiredOccurrences` starts the followed-by phase; only later logs count toward `followedByRequiredOccurrences`. When that second threshold is met, the incident is attached to that log's result and the sequence counters reset. Both thresholds count matching log entries, not individual conditions inside one entry, and are evaluated only within the submitted batch.
 
+<img alt="img.png" height="850" src="img.png"/>
+
 If any log cannot be parsed, the endpoint responds with `500 Internal Server Error` and a JSON error body instead of returning partial results. The UI displays the error message from the response. For example:
 
 ```json
