@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 public class DetectionRuleInitializer implements ApplicationRunner {
 
     private static final String RULE_NAME = "Failed Login attempt";
-    private static final String RULE_LOGIC = "EventID=4625 AND Channel=Security";
+    private static final String RULE_LOGIC = "EventID=\"4625\" AND Channel=\"Security\"";
     private static final String RULE_DESCRIPTION =
             "Detects failed login attempts in the Security channel (Windows Event ID 4625).";
 

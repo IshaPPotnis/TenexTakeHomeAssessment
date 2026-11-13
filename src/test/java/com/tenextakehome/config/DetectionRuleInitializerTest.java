@@ -29,7 +29,7 @@ class DetectionRuleInitializerTest {
         verify(detectionRuleService).createGlobalRule(requestCaptor.capture());
         DetectionRuleRequest request = requestCaptor.getValue();
         assertEquals("Failed Login attempt", request.getName());
-        assertEquals("EventID=4625 AND Channel=Security", request.getRuleLogic());
+        assertEquals("EventID=4625 AND Channel=\"Security\"", request.getRuleLogic());
         assertEquals(
                 "Detects failed login attempts in the Security channel (Windows Event ID 4625).",
                 request.getDescription());
