@@ -7,9 +7,8 @@ A Java-based Spring Boot REST API with a small JavaScript interface for submitti
 - Java 17
 - REST API for log processing
 - Redis-backed parser definition CRUD API
-- Browser UI for pasting log entries or loading a text file
+- Browser UI for processing logs and managing parser definitions
 - Swagger/OpenAPI documentation
-- H2 in-memory database for local development
 
 ## Project Structure
 ```text
@@ -19,7 +18,9 @@ ui/                  JavaScript logs interface and Dockerfile
 ```
 
 ## Run the application
+Start Redis first, then run the Spring API:
 ```bash
+docker run --rm --name tenex-redis -p 6379:6379 redis:7-alpine
 ./mvnw spring-boot:run
 ```
 
@@ -31,19 +32,15 @@ ui/                  JavaScript logs interface and Dockerfile
 - PUT `/api/definitions/{parserId}` - Update a parser definition
 - DELETE `/api/definitions/{parserId}` - Delete a parser definition
 
-Start Redis locally before using the definitions API:
-```bash
-docker run --rm --name tenex-redis -p 6379:6379 redis:7-alpine
-```
-
-The API connects to Redis at `localhost:6379` by default. Definition requests use this shape:
+The API connects to Redis at `localhost:6379` by default. Parser IDs are assigned incrementally by Redis, so create and update requests only provide the name and type:
 ```json
 {
-  "parserId": 1,
   "parserName": "XML parser",
   "parserType": "XML"
 }
 ```
+
+On startup, the API creates any missing sample definitions (`sample xml parser`, `sample json parser`, and `sample csv parser`) in Redis. Existing sample definitions are preserved.
 
 Example request:
 ```json
@@ -75,32 +72,10 @@ docker build -t logs-processor-ui ./ui
 docker run --rm --add-host=host.docker.internal:host-gateway -p 3000:3000 logs-processor-ui
 ```
 
-Open <http://localhost:3000>. The UI container proxies log submissions to the API at `http://host.docker.internal:8080`; override `API_BASE_URL` if the API runs elsewhere.
+Open <http://localhost:3000>. The UI container proxies requests to the Spring API at `http://host.docker.internal:8080`; override `API_BASE_URL` if the API runs elsewhere. The Spring API must be running and reachable from the UI container. For Docker on Linux, `--add-host=host.docker.internal:host-gateway` makes the host API address available inside the UI container.
 
 ## Swagger UI
 Open:
 ```text
 http://localhost:8080/swagger-ui.html
-```
-
-## H2 Console
-Open:
-```text
-http://localhost:8080/h2-console
-```
-
-Use the JDBC URL:
-```text
-jdbc:h2:mem:tenexdb
-```
-
-## Sample Request
-```json
-{
-  "firstName": "Alice",
-  "lastName": "Warren",
-  "email": "alice.warren@tenex.com",
-  "department": "Engineering",
-  "salary": 110000.00
-}
 ```

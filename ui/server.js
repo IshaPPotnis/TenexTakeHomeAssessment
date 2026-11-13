@@ -12,18 +12,33 @@ const contentTypes = {
 };
 
 const server = http.createServer(async (request, response) => {
-  if (request.url === "/api/logs/process") {
-    if (request.method !== "POST") {
-      response.writeHead(405, { Allow: "POST", "Content-Type": "text/plain; charset=utf-8" });
+  const pathname = new URL(request.url, "http://localhost").pathname;
+  const isProcessLogs = pathname === "/api/logs/process";
+  const isDefinitionsCollection = pathname === "/api/definitions";
+  const isDefinitionItem = /^\/api\/definitions\/\d+$/.test(pathname);
+  if (isProcessLogs || isDefinitionsCollection || isDefinitionItem) {
+    const allowedMethods = isProcessLogs
+      ? ["POST"]
+      : isDefinitionsCollection
+        ? ["GET", "POST"]
+        : ["GET", "PUT", "DELETE"];
+    if (!allowedMethods.includes(request.method)) {
+      response.writeHead(405, {
+        Allow: allowedMethods.join(", "),
+        "Content-Type": "text/plain; charset=utf-8"
+      });
       response.end("Method not allowed");
       return;
     }
 
     try {
-      const body = await readRequestBody(request);
-      const apiResponse = await fetch(`${apiBaseUrl}/api/logs/process`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const body = ["POST", "PUT"].includes(request.method)
+        ? await readRequestBody(request)
+        : undefined;
+      const headers = body === undefined ? {} : { "Content-Type": "application/json" };
+      const apiResponse = await fetch(`${apiBaseUrl}${pathname}`, {
+        method: request.method,
+        headers,
         body
       });
       const responseBody = await apiResponse.text();
@@ -33,8 +48,13 @@ const server = http.createServer(async (request, response) => {
       response.end(responseBody);
     } catch (error) {
       const status = error instanceof RangeError ? 413 : 502;
+      if (status === 502) {
+        console.error(`API proxy failed for ${request.method} ${pathname} at ${apiBaseUrl}:`, error);
+      }
       response.writeHead(status, { "Content-Type": "text/plain; charset=utf-8" });
-      response.end(status === 413 ? error.message : "Unable to reach the logs API");
+      response.end(status === 413
+        ? error.message
+        : `Cannot connect to the Spring API at ${apiBaseUrl}. Ensure the API is running and reachable from the UI.`);
     }
     return;
   }
@@ -45,7 +65,6 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
-  const pathname = new URL(request.url, "http://localhost").pathname;
   const requestedPath = pathname === "/" ? "index.html" : decodeURIComponent(pathname.slice(1));
   const filePath = path.resolve(publicDirectory, requestedPath);
   if (!filePath.startsWith(`${publicDirectory}${path.sep}`)) {

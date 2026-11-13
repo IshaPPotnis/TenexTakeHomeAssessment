@@ -1,11 +1,11 @@
 package com.tenextakehome.service;
 
+import com.tenextakehome.dto.ParserDefinitionRequest;
 import com.tenextakehome.exception.ResourceNotFoundException;
 import com.tenextakehome.model.ParserDefinition;
 import com.tenextakehome.repository.ParserRepository;
-import org.springframework.http.HttpStatus;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,10 +13,14 @@ import java.util.List;
 @Service
 public class DefinitionService {
 
-    private final ParserRepository parserRepository;
+    private static final String PARSER_ID_SEQUENCE_KEY = "parser-definitions:sequence";
 
-    public DefinitionService(ParserRepository parserRepository) {
+    private final ParserRepository parserRepository;
+    private final StringRedisTemplate redisTemplate;
+
+    public DefinitionService(ParserRepository parserRepository, StringRedisTemplate redisTemplate) {
         this.parserRepository = parserRepository;
+        this.redisTemplate = redisTemplate;
     }
 
     public List<ParserDefinition> getAllDefinitions() {
@@ -30,22 +34,18 @@ public class DefinitionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Parser definition not found with id: " + parserId));
     }
 
-    public ParserDefinition createDefinition(ParserDefinition definition) {
-        if (parserRepository.existsById(definition.getParserId())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Parser definition already exists with id: " + definition.getParserId());
-        }
+    public ParserDefinition createDefinition(ParserDefinitionRequest request) {
+        ParserDefinition definition = new ParserDefinition(
+                request.getParserName(),
+                nextParserId(),
+                request.getParserType());
         return parserRepository.save(definition);
     }
 
-    public ParserDefinition updateDefinition(Long parserId, ParserDefinition definition) {
-        if (!parserId.equals(definition.getParserId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Parser ID in the request body must match the path ID");
-        }
-        if (!parserRepository.existsById(parserId)) {
-            throw new ResourceNotFoundException("Parser definition not found with id: " + parserId);
-        }
+    public ParserDefinition updateDefinition(Long parserId, ParserDefinitionRequest request) {
+        ParserDefinition definition = getDefinition(parserId);
+        definition.setParserName(request.getParserName());
+        definition.setParserType(request.getParserType());
         return parserRepository.save(definition);
     }
 
@@ -54,5 +54,19 @@ public class DefinitionService {
             throw new ResourceNotFoundException("Parser definition not found with id: " + parserId);
         }
         parserRepository.deleteById(parserId);
+    }
+
+    private Long nextParserId() {
+        long highestExistingId = 0;
+        for (ParserDefinition definition : getAllDefinitions()) {
+            highestExistingId = Math.max(highestExistingId, definition.getParserId());
+        }
+
+        redisTemplate.opsForValue().setIfAbsent(PARSER_ID_SEQUENCE_KEY, String.valueOf(highestExistingId));
+        Long nextId = redisTemplate.opsForValue().increment(PARSER_ID_SEQUENCE_KEY);
+        if (nextId == null) {
+            throw new IllegalStateException("Unable to allocate parser ID from Redis");
+        }
+        return nextId;
     }
 }

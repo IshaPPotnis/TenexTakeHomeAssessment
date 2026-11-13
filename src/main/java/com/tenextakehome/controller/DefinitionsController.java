@@ -1,5 +1,6 @@
 package com.tenextakehome.controller;
 
+import com.tenextakehome.dto.ParserDefinitionRequest;
 import com.tenextakehome.model.ParserDefinition;
 import com.tenextakehome.service.DefinitionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -43,8 +44,9 @@ public class DefinitionsController {
 
     @PostMapping
     @Operation(summary = "Create a parser definition")
-    public ResponseEntity<ParserDefinition> createDefinition(@Valid @RequestBody ParserDefinition definition) {
-        ParserDefinition createdDefinition = definitionService.createDefinition(definition);
+    public ResponseEntity<ParserDefinition> createDefinition(
+            @Valid @RequestBody ParserDefinitionRequest request) {
+        ParserDefinition createdDefinition = definitionService.createDefinition(request);
         return ResponseEntity.created(URI.create("/api/definitions/" + createdDefinition.getParserId()))
                 .body(createdDefinition);
     }
@@ -53,8 +55,8 @@ public class DefinitionsController {
     @Operation(summary = "Update a parser definition")
     public ResponseEntity<ParserDefinition> updateDefinition(
             @PathVariable Long parserId,
-            @Valid @RequestBody ParserDefinition definition) {
-        return ResponseEntity.ok(definitionService.updateDefinition(parserId, definition));
+            @Valid @RequestBody ParserDefinitionRequest request) {
+        return ResponseEntity.ok(definitionService.updateDefinition(parserId, request));
     }
 
     @DeleteMapping("/{parserId}")

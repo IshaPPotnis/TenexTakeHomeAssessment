@@ -20,27 +20,34 @@
 
     <section class="intro" aria-labelledby="page-title">
       <p class="eyebrow">OBSERVABILITY TOOLKIT <span> / </span> INGESTION</p>
-      <h1 id="page-title">Make sense of<br><span>your log stream.</span></h1>
-      <p class="intro-copy">Submit log entries to the processor in one batch. Paste them directly or load a text file to get started.</p>
+      <h1 id="page-title">Make logs readable</h1>
+      <p class="intro-copy">Parse log batches with saved definitions, or manage the parsers in your library.</p>
     </section>
 
-    <section class="workspace" aria-labelledby="input-title">
+    <nav class="tabs" aria-label="Workspace">
+      <button class="tab-button is-active" id="process-tab" type="button" aria-controls="process-view" aria-selected="true">Process logs</button>
+      <button class="tab-button" id="library-tab" type="button" aria-controls="library-view" aria-selected="false">Parser library <span id="parser-count" class="count-badge">0</span></button>
+    </nav>
+
+    <section class="workspace" id="process-view" aria-labelledby="input-title">
       <div class="workspace-header">
         <div>
           <p class="step-label">01 <span>— INPUT</span></p>
           <h2 id="input-title">Log entries</h2>
         </div>
         <label class="file-picker" for="log-file">
-          <span aria-hidden="true">↑</span> Load a .txt file
+          <span aria-hidden="true">↑</span> Load a text file
         </label>
-        <input id="log-file" type="file" accept=".txt,text/plain">
+        <input id="log-file" type="file" accept=".txt,.xml,.json,.csv,text/plain,application/xml,application/json,text/csv">
       </div>
 
-      <label class="parser-id-label" for="parser-id">PARSER ID</label>
-      <input id="parser-id" class="parser-id-input" type="number" min="1" step="1" placeholder="Enter parser ID" required>
+      <label class="parser-id-label" for="parser-id">PARSER DEFINITION</label>
+      <select id="parser-id" class="parser-id-input" required>
+        <option value="">Loading parser definitions…</option>
+      </select>
 
       <label class="visually-hidden" for="logs-input">Log entries, one per line</label>
-      <textarea id="logs-input" spellcheck="false" placeholder="2025-03-08T10:42:15Z INFO  api.gateway  Request received\n2025-03-08T10:42:16Z WARN  auth.service  Token nearing expiry\n2025-03-08T10:42:18Z ERROR database.pool Connection timed out"></textarea>
+      <textarea id="logs-input" spellcheck="false" placeholder="Paste one XML, JSON, or CSV log entry per line…"></textarea>
 
       <div class="input-footer">
         <span class="format-hint"><span class="terminal-icon" aria-hidden="true">&gt;_</span> One entry per line</span>
@@ -48,13 +55,50 @@
       </div>
 
       <div class="submit-row">
-        <p>Each line is sent as a separate log entry.</p>
+        <p>Each non-empty line is parsed with the selected definition.</p>
         <button id="submit-button" type="button">
           <span>Process logs</span><span class="button-arrow" aria-hidden="true">↗</span>
         </button>
       </div>
 
-      <div id="result" class="result" role="status" aria-live="polite" hidden></div>
+      <div id="process-status" class="result" role="status" aria-live="polite" hidden></div>
+      <div id="results" class="results-list" aria-live="polite"></div>
+    </section>
+
+    <section class="workspace library-view" id="library-view" aria-labelledby="library-title" hidden>
+      <div class="workspace-header">
+        <div>
+          <p class="step-label">02 <span>— DEFINITIONS</span></p>
+          <h2 id="library-title">Parser library</h2>
+        </div>
+        <button id="new-parser-button" class="secondary-button" type="button"><span aria-hidden="true">＋</span> New parser</button>
+      </div>
+      <p class="section-copy">Create and maintain the definitions used to parse incoming logs.</p>
+      <div id="library-status" class="result" role="status" aria-live="polite" hidden></div>
+      <div id="parser-list" class="parser-list"></div>
+
+      <form id="parser-form" class="parser-form" hidden>
+        <div class="form-heading">
+          <div>
+            <p class="step-label">PARSER CONFIGURATION</p>
+            <h3 id="form-title">New parser</h3>
+          </div>
+          <button id="cancel-edit-button" class="icon-button" type="button" aria-label="Cancel editing">×</button>
+        </div>
+        <p class="id-hint">Parser ID is assigned automatically when the definition is created.</p>
+        <label for="definition-name">Name</label>
+        <input id="definition-name" name="parserName" type="text" maxlength="120" required>
+        <label for="definition-type">Format</label>
+        <select id="definition-type" name="parserType" required>
+          <option value="XML">XML</option>
+          <option value="JSON">JSON</option>
+          <option value="CSV">CSV</option>
+        </select>
+        <div class="form-actions">
+          <button id="save-parser-button" type="submit"><span>Save definition</span></button>
+          <button id="cancel-form-button" class="secondary-button" type="button">Cancel</button>
+        </div>
+      </form>
     </section>
 
     <footer><span>LOGLINE UI</span><span>CONNECTED TO YOUR LOCAL API</span></footer>
