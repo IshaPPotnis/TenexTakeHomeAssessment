@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101a2b">
+  <title>Logs Processor</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <main class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Logs Processor home">
+        <span class="brand-mark" aria-hidden="true">L</span>
+        <span>Logline<span class="brand-dot">.</span></span>
+      </a>
+      <span class="service-status"><span class="status-dot"></span> PROCESSOR API</span>
+    </header>
+
+    <section class="intro" aria-labelledby="page-title">
+      <p class="eyebrow">OBSERVABILITY TOOLKIT <span> / </span> INGESTION</p>
+      <h1 id="page-title">Make sense of<br><span>your log stream.</span></h1>
+      <p class="intro-copy">Submit log entries to the processor in one batch. Paste them directly or load a text file to get started.</p>
+    </section>
+
+    <section class="workspace" aria-labelledby="input-title">
+      <div class="workspace-header">
+        <div>
+          <p class="step-label">01 <span>— INPUT</span></p>
+          <h2 id="input-title">Log entries</h2>
+        </div>
+        <label class="file-picker" for="log-file">
+          <span aria-hidden="true">↑</span> Load a .txt file
+        </label>
+        <input id="log-file" type="file" accept=".txt,text/plain">
+      </div>
+
+      <label class="parser-id-label" for="parser-id">PARSER ID</label>
+      <input id="parser-id" class="parser-id-input" type="number" min="1" step="1" placeholder="Enter parser ID" required>
+
+      <label class="visually-hidden" for="logs-input">Log entries, one per line</label>
+      <textarea id="logs-input" spellcheck="false" placeholder="2025-03-08T10:42:15Z INFO  api.gateway  Request received\n2025-03-08T10:42:16Z WARN  auth.service  Token nearing expiry\n2025-03-08T10:42:18Z ERROR database.pool Connection timed out"></textarea>
+
+      <div class="input-footer">
+        <span class="format-hint"><span class="terminal-icon" aria-hidden="true">&gt;_</span> One entry per line</span>
+        <span id="line-count">0 lines</span>
+      </div>
+
+      <div class="submit-row">
+        <p>Each line is sent as a separate log entry.</p>
+        <button id="submit-button" type="button">
+          <span>Process logs</span><span class="button-arrow" aria-hidden="true">↗</span>
+        </button>
+      </div>
+
+      <div id="result" class="result" role="status" aria-live="polite" hidden></div>
+    </section>
+
+    <footer><span>LOGLINE UI</span><span>CONNECTED TO YOUR LOCAL API</span></footer>
+  </main>
+</body>
+</html>

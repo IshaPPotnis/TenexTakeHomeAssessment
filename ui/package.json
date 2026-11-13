@@ -1,0 +1,9 @@
+{
+  "name": "logs-processor-ui",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Web interface for submitting logs to the Tenex API",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
