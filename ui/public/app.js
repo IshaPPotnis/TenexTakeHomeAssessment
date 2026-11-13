@@ -1,6 +1,7 @@
 const logsInput = document.querySelector("#logs-input");
 const fileInput = document.querySelector("#log-file");
 const parserSelect = document.querySelector("#parser-id");
+const sampleLogsButton = document.querySelector("#sample-logs-button");
 const lineCount = document.querySelector("#line-count");
 const submitButton = document.querySelector("#submit-button");
 const processStatus = document.querySelector("#process-status");
@@ -153,6 +154,36 @@ function renderParserOptions() {
     option.value = definition.parserId;
     option.textContent = `${definition.parserName} · ${definition.parserType} · #${definition.parserId}`;
     parserSelect.append(option);
+  }
+  updateSampleLogsButton();
+}
+
+function updateSampleLogsButton() {
+  sampleLogsButton.hidden = !definitions.some(
+    (definition) => String(definition.parserId) === parserSelect.value
+  );
+}
+
+async function loadSampleLogs() {
+  const definition = definitions.find(
+    (item) => String(item.parserId) === parserSelect.value
+  );
+  if (!definition) return;
+  sampleLogsButton.disabled = true;
+  hideStatus(processStatus);
+  try {
+    const sampleLogs = await apiRequest(`/api/logs/sample/${definition.parserType}`);
+    if (typeof sampleLogs !== "string" || !sampleLogs.trim()) {
+      throw new Error("The sample logs API returned no log entries.");
+    }
+    logsInput.value = sampleLogs.trim().split(/\r?\n/).map((line) => line.trim()).filter(Boolean).join("\n");
+    fileInput.value = "";
+    updateLineCount();
+    resultsContainer.replaceChildren();
+  } catch (error) {
+    showStatus(processStatus, error.message || "Unable to load sample logs.", true);
+  } finally {
+    sampleLogsButton.disabled = false;
   }
 }
 
@@ -548,6 +579,8 @@ function renderResults(results) {
 }
 
 logsInput.addEventListener("input", updateLineCount);
+parserSelect.addEventListener("change", updateSampleLogsButton);
+sampleLogsButton.addEventListener("click", loadSampleLogs);
 
 fileInput.addEventListener("change", async () => {
   const [file] = fileInput.files;

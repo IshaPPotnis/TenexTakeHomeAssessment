@@ -35,7 +35,9 @@ class ParserDefinitionInitializerTest {
                     request.getParserName());
             if (request.getParserType() == ParserType.CSV) {
                 org.junit.jupiter.api.Assertions.assertEquals(
-                        List.of("EventID", "Channel", "Message"), request.getColumns());
+                        List.of("@timestamp", "clientip", "remote_user", "request", "status",
+                                "body_bytes_sent", "request_time", "http_referrer", "http_user_agent","EventID","Channel"),
+                        request.getColumns());
             }
         }
     }
@@ -53,7 +55,7 @@ class ParserDefinitionInitializerTest {
     }
 
     @Test
-    void initializesColumnsOnExistingCsvSampleParser() {
+    void updatesColumnsOnExistingCsvSampleParserToMatchItsResource() {
         when(definitionService.getAllDefinitions()).thenReturn(List.of(
                 new ParserDefinition("sample xml parser", 1L, ParserType.XML),
                 new ParserDefinition("sample json parser", 2L, ParserType.JSON),
@@ -61,7 +63,10 @@ class ParserDefinitionInitializerTest {
 
         initializer.run(null);
 
-        verify(definitionService).initializeGlobalColumnsIfMissing(
-                3L, List.of("EventID", "Channel", "Message"));
+        verify(definitionService).updateGlobalColumnsIfDefault(
+                3L,
+                List.of("EventID", "Channel", "Message"),
+                List.of("@timestamp", "clientip", "remote_user", "request", "status",
+                        "body_bytes_sent", "request_time", "http_referrer", "http_user_agent","EventID","Channel"));
     }
 }

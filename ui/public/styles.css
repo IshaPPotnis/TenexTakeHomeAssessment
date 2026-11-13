@@ -65,6 +65,7 @@ h2 { margin: 0; color: #eaf0f8; font: 600 18px Manrope, sans-serif; letter-spaci
 #log-file { display: none; }
 .parser-id-label { display: block; margin: 0 0 8px; color: #a4b0c1; font: 10px "DM Mono", monospace; letter-spacing: 1px; }
 .parser-id-input { width: min(100%, 360px); margin-bottom: 17px; padding: 10px 12px; border: 1px solid #465873; border-radius: 7px; outline: none; color: #f0f4fa; background: #101a2a; font: 12px "DM Mono", monospace; }
+.sample-log-row { margin: -8px 0 17px; }
 .parser-id-input option { color: #f0f4fa; background: #101a2a; }
 .parser-id-input:focus { border-color: #728e4c; box-shadow: 0 0 0 3px #c0f56c12; }
 

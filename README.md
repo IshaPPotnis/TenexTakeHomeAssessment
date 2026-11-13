@@ -153,13 +153,13 @@ This parses to `{"EventID":"4625","Channel":"Security","Message":"Failed login"}
 {"EventID":"4625","Channel":"Security","Message":"Failed login"}
 ```
 
-**CSV** — use the `sample csv parser`:
+**CSV** — use the `sample csv parser`; the UI sample button loads all three records from `src/main/resources/sampleCSVLog.txt`:
 
 ```csv
-4625,Security,Failed login
+2026-11-13T15:30:12Z,203.0.113.42,-,POST /api/v1/auth/login,401,142,0.045,https://app.example.com/login,python-requests/2.31.0
 ```
 
-Each log is one string in the `logs` array; submit one request per parser type because each request selects a single `parserId`. The startup `sample csv parser` uses the columns `EventID`, `Channel`, and `Message`, so its sample row parses to a keyed JSON object. CSV values remain strings.
+Each log is one string in the `logs` array; submit one request per parser type because each request selects a single `parserId`. The UI's **Load sample logs** button fills the input from the matching classpath resource: `sampleXMLLog.txt`, `sampleJsonLog.txt`, or `sampleCSVLog.txt`. The startup `sample csv parser` uses the columns `@timestamp`, `clientip`, `remote_user`, `request`, `status`, `body_bytes_sent`, `request_time`, `http_referrer`, and `http_user_agent`, so the sample rows parse to keyed JSON objects. CSV values remain strings.
 
 ### Parser definitions
 
@@ -218,7 +218,7 @@ At application startup, the API ensures the following shared `GLOBAL` records ex
 
 - `sample xml parser` with type `XML`
 - `sample json parser` with type `JSON`
-- `sample csv parser` with type `CSV` and columns `EventID`, `Channel`, and `Message`
+- `sample csv parser` with type `CSV` and columns matching the access-log sample resource
 - `Failed Login attempt`, with logic `EventID="4625" AND Channel="Security"`
 
 Missing sample parser definitions are created at startup without overwriting existing definitions. The built-in `Failed Login attempt` rule is created if missing and reset to the documented name, logic, and description on every startup; its existing ID is preserved.

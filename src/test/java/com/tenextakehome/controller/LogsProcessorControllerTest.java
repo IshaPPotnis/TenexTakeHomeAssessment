@@ -19,6 +19,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,6 +31,14 @@ class LogsProcessorControllerTest {
     private final DetectionRuleService detectionRuleService = mock(DetectionRuleService.class);
     private final LogsProcessorController controller = new LogsProcessorController(
             definitionService, parsingService, detectionRuleService, new ObjectMapper());
+
+    @Test
+    void returnsSampleLogsFromClasspathResource() {
+        ResponseEntity<String> response = controller.getSampleLogs(ParserType.XML);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertTrue(response.getBody().contains("<EventID>4625</EventID>"));
+    }
 
     @Test
     void includesEveryMatchingRuleAsIdAndName() {

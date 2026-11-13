@@ -17,6 +17,11 @@ import java.util.stream.Collectors;
 @Component
 public class ParserDefinitionInitializer implements ApplicationRunner {
 
+    private static final List<String> PREVIOUS_CSV_SAMPLE_COLUMNS = List.of("EventID", "Channel", "Message");
+    private static final List<String> CSV_SAMPLE_COLUMNS = List.of(
+            "@timestamp", "clientip", "remote_user", "request", "status",
+            "body_bytes_sent", "request_time", "http_referrer", "http_user_agent", "EventID", "Channel");
+
     private final DefinitionService definitionService;
 
     public ParserDefinitionInitializer(DefinitionService definitionService) {
@@ -38,16 +43,15 @@ public class ParserDefinitionInitializer implements ApplicationRunner {
         existingDefinitions.stream()
                 .filter(definition -> CustomerScope.isGlobal(definition.getCustomerName())
                         && definition.getParserType() == ParserType.CSV
-                        && "sample csv parser".equals(definition.getParserName())
-                        && definition.getColumns().isEmpty())
-                .forEach(definition -> definitionService.initializeGlobalColumnsIfMissing(
-                        definition.getParserId(), List.of("EventID", "Channel", "Message")));
+                        && "sample csv parser".equals(definition.getParserName()))
+                .forEach(definition -> definitionService.updateGlobalColumnsIfDefault(
+                        definition.getParserId(), PREVIOUS_CSV_SAMPLE_COLUMNS, CSV_SAMPLE_COLUMNS));
 
         for (ParserType parserType : ParserType.values()) {
             if (!existingSampleTypes.contains(parserType)) {
                 String parserName = "sample " + parserType.name().toLowerCase() + " parser";
                 List<String> columns = parserType == ParserType.CSV
-                        ? List.of("EventID", "Channel", "Message")
+                        ? CSV_SAMPLE_COLUMNS
                         : List.of();
                 definitionService.createGlobalDefinition(
                         new ParserDefinitionRequest(parserName, parserType, List.of(), columns));

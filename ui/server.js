@@ -14,6 +14,7 @@ const contentTypes = {
 const server = http.createServer(async (request, response) => {
   const pathname = new URL(request.url, "http://localhost").pathname;
   const isProcessLogs = pathname === "/api/logs/process";
+  const isSampleLogs = /^\/api\/logs\/sample\/(XML|JSON|CSV)$/.test(pathname);
   const isDefinitionsCollection = pathname === "/api/definitions";
   const isDefinitionItem = /^\/api\/definitions\/\d+$/.test(pathname);
   const isDetectionRulesCollection = pathname === "/api/detection-rules";
@@ -21,12 +22,14 @@ const server = http.createServer(async (request, response) => {
   const isAuthLogin = pathname === "/api/auth/login";
   const isAuthSession = pathname === "/api/auth/session";
   const isAuthLogout = pathname === "/api/auth/logout";
-  if (isProcessLogs || isDefinitionsCollection || isDefinitionItem
+  if (isProcessLogs || isSampleLogs || isDefinitionsCollection || isDefinitionItem
       || isDetectionRulesCollection || isDetectionRuleItem
       || isAuthLogin || isAuthSession || isAuthLogout) {
     let allowedMethods;
     if (isProcessLogs || isAuthLogin || isAuthLogout) {
       allowedMethods = ["POST"];
+    } else if (isSampleLogs) {
+      allowedMethods = ["GET"];
     } else if (isAuthSession) {
       allowedMethods = ["GET"];
     } else if (isDefinitionsCollection || isDetectionRulesCollection) {
