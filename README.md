@@ -1,61 +1,182 @@
-# TenexTakeHomeAssessment
+# Tenex Log Processor
 
-A Java-based Spring Boot REST API with a small JavaScript interface for submitting log entries.
+Tenex Log Processor is a Spring Boot REST API and browser UI for parsing batches of log lines, removing sensitive fields from parsed output, and detecting incidents with configurable rules. The UI provides a workspace for processing logs and managing parser definitions and detection rules.
 
 ## Features
-- Spring Boot 3.x
-- Java 17
-- REST API for log processing
-- Redis-backed parser definition CRUD API
-- Browser UI for processing logs, managing parser definitions, and maintaining detection rules
-- Session-based demo login with customer-scoped parser definitions and detection rules
-- Swagger/OpenAPI documentation
 
-## Project Structure
-```text
-src/main/java/       Spring Boot API
-src/main/resources/  Application configuration
-ui/                  JavaScript logs interface and Dockerfile
-```
+- Java 17 and Spring Boot 3 REST API.
+- XML, JSON, and CSV log parsers.
+- Recursive removal of configured fields from parsed JSON output.
+- Redis-backed parser definitions, detection rules, ID sequences, and login tokens.
+- Rule evaluation against parsed log fields, with matching incidents returned per log.
+- Customer-scoped records, with shared read-only `GLOBAL` definitions and rules.
+- Browser UI and Swagger/OpenAPI documentation.
 
-## Run the application
-Start Redis first, then run the Spring API:
+## UI screenshots
+
+The following captures show the main log-processing workspace and the parser and detection libraries.
+
+![Log processing workspace showing parsed fields and a matched incident](docs/screenshots/log-processing.svg)
+
+![Parser library showing saved parser definitions](docs/screenshots/parser-library.svg)
+
+![Detection library showing the built-in failed-login rule](docs/screenshots/detection-library.svg)
+
+## Setup and run locally
+
+Run these steps in order. Keep Redis and the Spring API running while using the UI.
+
+### 1. Start Redis
+
+Redis is the application's storage backend and must be available before the API starts:
+
 ```bash
 docker run --rm --name tenex-redis -p 6379:6379 redis:7-alpine
-./mvnw spring-boot:run
 ```
 
-## API Endpoints
-- POST `/api/auth/login` - Authenticate and create a customer session
-- GET `/api/auth/session` - Get the customer associated with the bearer token
-- POST `/api/auth/logout` - Revoke the current bearer token
-- POST `/api/logs/process` - Accepts log strings and the parser ID to use
-- GET `/api/definitions` - List parser definitions
-- GET `/api/definitions/{parserId}` - Get a parser definition
-- POST `/api/definitions` - Create a parser definition
-- PUT `/api/definitions/{parserId}` - Update a parser definition
-- DELETE `/api/definitions/{parserId}` - Delete a parser definition
-- GET `/api/detection-rules` - List detection rules
-- GET `/api/detection-rules/{id}` - Get a detection rule
-- POST `/api/detection-rules` - Create a detection rule
-- PUT `/api/detection-rules/{id}` - Update a detection rule
-- DELETE `/api/detection-rules/{id}` - Delete a detection rule
+The API connects to `localhost:6379` by default.
 
-The API connects to Redis at `localhost:6379` by default. Parser IDs are assigned incrementally by Redis, so create and update requests provide the name and type, plus an optional list of fields to remove:
+### 2. Build and start the Spring API
+
+From the repository root:
+
+```bash
+mvn clean package
+mvn spring-boot:run
+```
+
+The API starts on port `8080`. On startup, it initializes any missing global sample parser definitions and the built-in failed-login detection rule in Redis. Existing startup records are preserved.
+
+### 3. Build and start the UI
+
+To run the UI in Docker from the repository root:
+
+```bash
+docker build -t logs-processor-ui ./ui
+docker run --rm --add-host=host.docker.internal:host-gateway -p 3000:3000 logs-processor-ui
+```
+
+Open <http://localhost:3000>. The UI container proxies API requests to `http://host.docker.internal:8080`. The `--add-host` option is needed for Docker on Linux so the UI container can reach the API on the host. To use a different API address, set `API_BASE_URL` when starting the UI container.
+
+Alternatively, run the UI directly with Node.js:
+
+```bash
+npm --prefix ui start
+```
+
+Open <http://localhost:3000>; the local UI server proxies to `http://localhost:8080` by default.
+
+## Authentication and customer scope
+
+Sign in through the UI with the development credentials `admin-dev` / `admin@123`. Login returns a bearer token and customer name. For every API route except login, send both headers:
+
+```http
+Authorization: Bearer <accessToken>
+X-Customer-Name: <customerName>
+```
+
+The API verifies that the customer-name header matches the identity associated with the bearer token; the header alone does not grant access. Tokens expire after eight hours and are stored in Redis by SHA-256 digest. The UI keeps the token and customer name for the current browser tab and clears them after successful logout.
+
+The demo credentials are hardcoded for local development and must not be used in production. Parser definitions and detection rules belong to the authenticated customer or to `GLOBAL`. Customers can see their own records and global records; global records cannot be modified or deleted through customer CRUD APIs. Customer names are assigned by the authenticated API context, not accepted from request bodies.
+
+## API reference
+
+Base URL: `http://localhost:8080`. JSON request and response bodies use `Content-Type: application/json`. All routes except `POST /api/auth/login` require the authentication headers above.
+
+### Authentication
+
+| Method and path | Request | Response and meaning |
+|---|---|---|
+| `POST /api/auth/login` | `{"username":"admin-dev","password":"admin@123"}` | `200`: `{"customerName":"admin-dev","accessToken":"..."}`. Issues a token for the configured development account. |
+| `GET /api/auth/session` | Authentication headers | `200`: `{"customerName":"admin-dev","accessToken":null}`. Confirms the authenticated customer context. |
+| `POST /api/auth/logout` | Authentication headers | `204` with no body. Revokes the bearer token. |
+
+Invalid login credentials or an invalid, expired, or mismatched token/customer header are rejected with `401 Unauthorized`.
+
+### Process logs
+
+`POST /api/logs/process` parses every submitted line with the selected parser and checks each successfully parsed log against the visible detection rules.
+
+Request:
+
 ```json
 {
-  "parserName": "XML parser",
-  "parserType": "XML",
+  "logs": ["{\"EventID\":4625,\"Channel\":\"Security\"}"],
+  "parserId": 2
+}
+```
+
+`logs` must be a non-empty array of strings. `parserId` is required and must identify a parser visible to the authenticated customer.
+
+Response (`200`):
+
+```json
+{
+  "results": [
+    {
+      "log": "{\"EventID\":4625,\"Channel\":\"Security\"}",
+      "parsedOutput": "{\"EventID\":4625,\"Channel\":\"Security\"}",
+      "notes": "Parsed successfully using JSON.",
+      "matchedIncident": ["1000-Failed Login attempt"]
+    }
+  ]
+}
+```
+
+Each result corresponds to one input line. `parsedOutput` is a JSON-encoded string; it is `null` when parsing fails, and `notes` describes success or the parsing error. `matchedIncident` contains matching rules as `id-Name` strings, or an empty array when none match. CSV parser output is represented as JSON arrays of field values.
+
+#### Sample logs for testing
+
+Select the matching sample parser in the UI, or use its `parserId` from `GET /api/definitions`, then submit the corresponding log. The built-in failed-login rule should match the XML and JSON examples:
+
+**XML** — use the `sample xml parser`:
+
+```xml
+<log><EventID>4625</EventID><Channel>Security</Channel><Message>Failed login</Message></log>
+```
+
+**JSON** — use the `sample json parser`:
+
+```json
+{"EventID":4625,"Channel":"Security","Message":"Failed login"}
+```
+
+**CSV** — use the `sample csv parser`:
+
+```csv
+4625,Security,Failed login
+```
+
+Each log is one string in the `logs` array; submit one request per parser type because each request selects a single `parserId`. The CSV parser returns the comma-separated values as a JSON array and does not infer column names.
+
+### Parser definitions
+
+Parser create and update request:
+
+```json
+{
+  "parserName": "Windows JSON",
+  "parserType": "JSON",
   "fieldsToRemove": ["password", "token"]
 }
 ```
-`fieldsToRemove` is optional. Matching keys are removed recursively from the parsed JSON output; omitted or empty lists leave the parsed output unchanged.
 
-On startup, the API creates any missing sample definitions (`sample xml parser`, `sample json parser`, and `sample csv parser`) in Redis. Existing sample definitions are preserved.
+`parserName` is required. `parserType` is one of `XML`, `JSON`, or `CSV`. `fieldsToRemove` is optional; matching keys are removed recursively from parsed JSON output. Parser IDs are assigned incrementally and should not be supplied in create/update request bodies.
 
-On startup, the API also creates the `Failed Login attempt` detection rule if it does not already exist. It matches `EventID=4625 AND Channel=Security`; its four-digit ID is assigned by Redis.
+| Method and path | Request | Response and meaning |
+|---|---|---|
+| `GET /api/definitions` | None | `200`: list parser definitions visible to this customer, including `GLOBAL` definitions. |
+| `GET /api/definitions/{parserId}` | None | `200`: one visible definition. |
+| `POST /api/definitions` | Parser definition JSON | `201`: creates a definition in the authenticated customer's scope and returns it. |
+| `PUT /api/definitions/{parserId}` | Parser definition JSON | `200`: replaces the editable fields of the customer's definition and returns it. |
+| `DELETE /api/definitions/{parserId}` | None | `204`: deletes the customer's definition. |
 
-Detection rule IDs are generated incrementally as four-digit numbers. Create and update requests use this shape:
+Global definitions are visible but read-only. Requests for unavailable definitions return `404`; attempts to modify or delete global definitions return `403`.
+
+### Detection rules
+
+Detection-rule create and update request:
+
 ```json
 {
   "name": "High error rate",
@@ -64,47 +185,36 @@ Detection rule IDs are generated incrementally as four-digit numbers. Create and
 }
 ```
 
-Example request:
-```json
-{
-  "logs": ["INFO Application started", "WARN Cache nearing capacity"],
-  "parserId": 1
-}
-```
+All three fields are required. Rule IDs are assigned incrementally as four-digit numbers (`1000`–`9999`) and should not be supplied in create/update request bodies. Rule logic compares parsed log fields to values. Supported comparison operators are `=`, `!=`, `<`, `>`, and their names `EQUAL`, `NOT_EQUAL`, `LESS_THAN`, `GREATER_THAN`. Conditions can be combined with `AND` and `OR`; field paths can use dot notation for nested JSON objects.
 
-The response contains one result per log entry:
-```json
-{
-  "results": [
-    {
-      "log": "INFO Application started",
-      "parsedOutput": "{\"Application started\":\"INFO\"}",
-      "notes": "Parsed successfully using XML.",
-      "matchedIncident": []
-    }
-  ]
-}
-```
+| Method and path | Request | Response and meaning |
+|---|---|---|
+| `GET /api/detection-rules` | None | `200`: list rules visible to this customer, including `GLOBAL` rules. |
+| `GET /api/detection-rules/{id}` | None | `200`: one visible rule. |
+| `POST /api/detection-rules` | Detection rule JSON | `201`: creates a rule in the authenticated customer's scope and returns it. |
+| `PUT /api/detection-rules/{id}` | Detection rule JSON | `200`: updates the customer's rule and returns it. |
+| `DELETE /api/detection-rules/{id}` | None | `204`: deletes the customer's rule. |
 
-Each log entry is parsed according to the selected definition's `parserType` (`XML`, `JSON`, or `CSV`). CSV entries are returned as JSON arrays of field values. `matchedIncident` contains each matching rule as an `id-Name` string, or an empty list when no rule matches. Parsed output is displayed as a field/value table in the UI.
+Global rules are visible but read-only. Requests for unavailable rules return `404`; attempts to modify or delete global rules return `403`.
 
-The UI's Detection library tab supports listing, creating, updating, and deleting detection rules through `/api/detection-rules`.
+## Redis data and startup defaults
 
-## Run the UI
-Start the Spring Boot API on port 8080, then build and run the standalone UI container:
-```bash
-docker build -t logs-processor-ui ./ui
-docker run --rm --add-host=host.docker.internal:host-gateway -p 3000:3000 logs-processor-ui
-```
+Parser definitions and detection rules are stored in Redis with a `customerName` scope. Redis also holds the sequences used to assign parser IDs and four-digit detection-rule IDs, and the short-lived login-token records. The default Redis address is `localhost:6379`.
 
-Open <http://localhost:3000>. The UI container proxies requests to the Spring API at `http://host.docker.internal:8080`; override `API_BASE_URL` if the API runs elsewhere. The Spring API must be running and reachable from the UI container. For Docker on Linux, `--add-host=host.docker.internal:host-gateway` makes the host API address available inside the UI container.
+At application startup, the API ensures the following shared `GLOBAL` records exist:
 
-Sign in with username `admin-dev` and password `admin@123`. Login returns a random bearer token and `customerName`; the UI stores both for the current browser tab and sends `Authorization: Bearer <token>` and `X-Customer-Name: <customerName>` on subsequent requests until logout. The API verifies that the customer-name header matches the customer bound to the bearer token. Tokens expire after eight hours and are stored by SHA-256 digest in Redis. This hardcoded account is for local development only and maps to the `admin-dev` customer scope. Parser definitions and detection rules are stored with a `customerName`, assigned by the authenticated token rather than accepted from API request bodies. A customer sees its own records and records in the `GLOBAL` scope. Global records are read-only in the customer UI. The built-in sample parsers and failed-login rule are global. Do not use the demo credentials in production.
+- `sample xml parser` with type `XML`
+- `sample json parser` with type `JSON`
+- `sample csv parser` with type `CSV`
+- `Failed Login attempt`, with logic `EventID=4625 AND Channel=Security`
 
-All parser, detection-rule, and log-processing API routes require the bearer token and matching `X-Customer-Name` header returned by `/api/auth/login`. `/api/auth/session` and `/api/auth/logout` also require both; only the login route is accessible without authentication.
+These are initialized only when missing, so restarting the app does not overwrite existing sample definitions or the built-in rule.
 
-## Swagger UI
-Open:
-```text
-http://localhost:8080/swagger-ui.html
-```
+## API documentation
+
+With the Spring API running, open Swagger UI at <http://localhost:8080/swagger-ui.html>.
+
+## Declarations
+
+- **AI assistance:** GitHub Copilot was used during development.
+- **Sample content:** Sample logs and detection rules were sourced from Gemini.

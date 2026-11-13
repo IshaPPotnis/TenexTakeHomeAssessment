@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="820" viewBox="0 0 1200 820" role="img" aria-labelledby="title description">
+  <title id="title">Logline log processing workspace</title>
+  <desc id="description">Dark-themed Logline UI with a JSON log entry, a selected parser, parsed field table, and a matched failed-login incident.</desc>
+  <defs>
+    <linearGradient id="background" x2="1" y2="1">
+      <stop stop-color="#1b2b42"/>
+      <stop offset=".58" stop-color="#101a2b"/>
+      <stop offset="1" stop-color="#101a2b"/>
+    </linearGradient>
+    <linearGradient id="panel" x2="1" y2="1">
+      <stop stop-color="#18263a"/>
+      <stop offset="1" stop-color="#141f31"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="820" fill="url(#background)"/>
+  <g font-family="Arial, sans-serif">
+    <rect x="125" y="46" width="34" height="34" rx="10" fill="#c0f56c"/>
+    <text x="142" y="70" text-anchor="middle" fill="#142019" font-size="21" font-weight="700">L</text>
+    <text x="170" y="70" fill="#f3f6fa" font-size="21" font-weight="700">Logline<tspan fill="#c0f56c">.</tspan></text>
+    <text x="825" y="68" fill="#c0cad8" font-family="monospace" font-size="12">admin-dev</text>
+    <rect x="900" y="48" width="84" height="32" rx="7" fill="#1a283b" stroke="#35445a"/>
+    <text x="942" y="69" text-anchor="middle" fill="#c0cad8" font-size="12">Log out</text>
+    <circle cx="1010" cy="64" r="4" fill="#c0f56c"/>
+    <text x="1022" y="68" fill="#a4b0c1" font-family="monospace" font-size="10" letter-spacing="1">PROCESSOR API</text>
+    <line x1="125" y1="100" x2="1075" y2="100" stroke="#28374d"/>
+
+    <text x="125" y="147" fill="#c0f56c" font-family="monospace" font-size="11" letter-spacing="2">OBSERVABILITY TOOLKIT / INGESTION</text>
+    <text x="125" y="210" fill="#eaf0f8" font-size="52" font-weight="700">Make logs readable</text>
+    <text x="127" y="242" fill="#9aa8bb" font-size="15">Parse log batches with saved definitions, or manage the parsers in your library.</text>
+
+    <rect x="125" y="276" width="596" height="44" rx="9" fill="#121d2e" stroke="#29384d"/>
+    <rect x="131" y="281" width="184" height="34" rx="6" fill="#202f44" stroke="#34445a"/>
+    <text x="223" y="303" text-anchor="middle" fill="#e7edf7" font-size="12" font-weight="600">Process logs</text>
+    <text x="410" y="303" text-anchor="middle" fill="#8998ad" font-size="12">Parser library</text>
+    <rect x="528" y="290" width="20" height="18" rx="9" fill="#c0f56c18"/>
+    <text x="538" y="303" text-anchor="middle" fill="#c0f56c" font-family="monospace" font-size="10">4</text>
+    <text x="633" y="303" text-anchor="middle" fill="#8998ad" font-size="12">Detection library</text>
+    <rect x="697" y="290" width="20" height="18" rx="9" fill="#c0f56c18"/>
+    <text x="707" y="303" text-anchor="middle" fill="#c0f56c" font-family="monospace" font-size="10">1</text>
+
+    <rect x="125" y="342" width="950" height="428" rx="14" fill="url(#panel)" stroke="#2b3a50"/>
+    <text x="157" y="375" fill="#c0f56c" font-family="monospace" font-size="10" letter-spacing="1.5">01 — INPUT</text>
+    <text x="157" y="402" fill="#eaf0f8" font-size="19" font-weight="600">Log entries</text>
+    <rect x="898" y="363" width="146" height="34" rx="7" fill="#1a283b" stroke="#35445a"/>
+    <text x="971" y="385" text-anchor="middle" fill="#c0cad8" font-size="12"><tspan fill="#c0f56c">↑</tspan> Load a text file</text>
+    <text x="157" y="438" fill="#a4b0c1" font-family="monospace" font-size="10" letter-spacing="1">PARSER DEFINITION</text>
+    <rect x="157" y="449" width="354" height="39" rx="7" fill="#101a2a" stroke="#465873"/>
+    <text x="172" y="474" fill="#f0f4fa" font-family="monospace" font-size="12">sample json parser · JSON · #2</text>
+    <text x="157" y="526" fill="#d3deec" font-family="monospace" font-size="12">{ "EventID": 4625,</text>
+    <text x="157" y="549" fill="#d3deec" font-family="monospace" font-size="12">  "Channel": "Security",</text>
+    <text x="157" y="572" fill="#d3deec" font-family="monospace" font-size="12">  "Message": "Failed sign-in" }</text>
+    <rect x="157" y="504" width="886" height="101" rx="8" fill="#101a2a" stroke="#2c3b51"/>
+    <text x="157" y="631" fill="#c0f56c" font-family="monospace" font-size="12">&gt;_</text>
+    <text x="181" y="631" fill="#8290a6" font-family="monospace" font-size="10">One entry per line</text>
+    <text x="1043" y="631" text-anchor="end" fill="#8290a6" font-family="monospace" font-size="10">1 line</text>
+    <line x1="157" y1="653" x2="1043" y2="653" stroke="#29374b"/>
+    <text x="157" y="681" fill="#8290a6" font-size="11">Each non-empty line is parsed with the selected definition.</text>
+    <rect x="881" y="664" width="162" height="40" rx="7" fill="#c0f56c"/>
+    <text x="958" y="689" text-anchor="middle" fill="#142019" font-size="12" font-weight="700">Process logs  ↗</text>
+
+    <rect x="157" y="720" width="886" height="34" rx="7" fill="#1d2b24" stroke="#405638"/>
+    <text x="173" y="742" fill="#d7edbe" font-family="monospace" font-size="11">Processed 1 log.</text>
+    <text x="125" y="800" fill="#68778c" font-family="monospace" font-size="9" letter-spacing="1">LOGLINE UI</text>
+    <text x="1075" y="800" text-anchor="end" fill="#68778c" font-family="monospace" font-size="9" letter-spacing="1">CONNECTED TO YOUR LOCAL API</text>
+  </g>
+</svg>

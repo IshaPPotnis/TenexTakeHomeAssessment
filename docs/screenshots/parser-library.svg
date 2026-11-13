@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title description">
+  <title id="title">Logline parser library</title>
+  <desc id="description">The Logline parser library listing sample XML, JSON, CSV and customer parser definitions with formats and scope.</desc>
+  <defs>
+    <linearGradient id="background" x2="1" y2="1">
+      <stop stop-color="#1b2b42"/>
+      <stop offset=".58" stop-color="#101a2b"/>
+      <stop offset="1" stop-color="#101a2b"/>
+    </linearGradient>
+    <linearGradient id="panel" x2="1" y2="1">
+      <stop stop-color="#18263a"/>
+      <stop offset="1" stop-color="#141f31"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="760" fill="url(#background)"/>
+  <g font-family="Arial, sans-serif">
+    <rect x="125" y="42" width="34" height="34" rx="10" fill="#c0f56c"/>
+    <text x="142" y="66" text-anchor="middle" fill="#142019" font-size="21" font-weight="700">L</text>
+    <text x="170" y="66" fill="#f3f6fa" font-size="21" font-weight="700">Logline<tspan fill="#c0f56c">.</tspan></text>
+    <text x="825" y="64" fill="#c0cad8" font-family="monospace" font-size="12">admin-dev</text>
+    <rect x="900" y="44" width="84" height="32" rx="7" fill="#1a283b" stroke="#35445a"/>
+    <text x="942" y="65" text-anchor="middle" fill="#c0cad8" font-size="12">Log out</text>
+    <circle cx="1010" cy="60" r="4" fill="#c0f56c"/>
+    <text x="1022" y="64" fill="#a4b0c1" font-family="monospace" font-size="10" letter-spacing="1">PROCESSOR API</text>
+    <line x1="125" y1="96" x2="1075" y2="96" stroke="#28374d"/>
+    <text x="125" y="142" fill="#c0f56c" font-family="monospace" font-size="11" letter-spacing="2">OBSERVABILITY TOOLKIT / INGESTION</text>
+    <text x="125" y="205" fill="#eaf0f8" font-size="52" font-weight="700">Make logs readable</text>
+    <text x="127" y="237" fill="#9aa8bb" font-size="15">Parse log batches with saved definitions, or manage the parsers in your library.</text>
+
+    <rect x="125" y="269" width="596" height="44" rx="9" fill="#121d2e" stroke="#29384d"/>
+    <text x="222" y="296" text-anchor="middle" fill="#8998ad" font-size="12">Process logs</text>
+    <rect x="321" y="274" width="187" height="34" rx="6" fill="#202f44" stroke="#34445a"/>
+    <text x="414" y="296" text-anchor="middle" fill="#e7edf7" font-size="12" font-weight="600">Parser library</text>
+    <rect x="520" y="283" width="20" height="18" rx="9" fill="#c0f56c18"/>
+    <text x="530" y="296" text-anchor="middle" fill="#c0f56c" font-family="monospace" font-size="10">4</text>
+    <text x="633" y="296" text-anchor="middle" fill="#8998ad" font-size="12">Detection library</text>
+    <rect x="697" y="283" width="20" height="18" rx="9" fill="#c0f56c18"/>
+    <text x="707" y="296" text-anchor="middle" fill="#c0f56c" font-family="monospace" font-size="10">1</text>
+
+    <rect x="125" y="335" width="950" height="374" rx="14" fill="url(#panel)" stroke="#2b3a50"/>
+    <text x="157" y="369" fill="#c0f56c" font-family="monospace" font-size="10" letter-spacing="1.5">02 — DEFINITIONS</text>
+    <text x="157" y="398" fill="#eaf0f8" font-size="19" font-weight="600">Parser library</text>
+    <rect x="907" y="355" width="136" height="36" rx="7" fill="#1a283b" stroke="#35445a"/>
+    <text x="975" y="378" text-anchor="middle" fill="#c0cad8" font-size="12"><tspan fill="#c0f56c">＋</tspan> New parser</text>
+    <text x="157" y="427" fill="#8290a6" font-size="12">Create and maintain the definitions used to parse incoming logs.</text>
+
+    <rect x="157" y="449" width="886" height="52" rx="8" fill="#101a2a" stroke="#2b3a50"/>
+    <text x="176" y="472" fill="#e7edf7" font-size="13" font-weight="600">sample xml parser</text>
+    <text x="176" y="489" fill="#aab7c9" font-family="monospace" font-size="10">ID 1 · XML · GLOBAL</text>
+    <rect x="941" y="461" width="78" height="27" rx="6" fill="#1a283b" stroke="#35445a"/>
+    <text x="980" y="479" text-anchor="middle" fill="#8290a6" font-size="10">Read only</text>
+
+    <rect x="157" y="511" width="886" height="52" rx="8" fill="#101a2a" stroke="#2b3a50"/>
+    <text x="176" y="534" fill="#e7edf7" font-size="13" font-weight="600">sample json parser</text>
+    <text x="176" y="551" fill="#aab7c9" font-family="monospace" font-size="10">ID 2 · JSON · GLOBAL</text>
+    <rect x="941" y="523" width="78" height="27" rx="6" fill="#1a283b" stroke="#35445a"/>
+    <text x="980" y="541" text-anchor="middle" fill="#8290a6" font-size="10">Read only</text>
+
+    <rect x="157" y="573" width="886" height="52" rx="8" fill="#101a2a" stroke="#2b3a50"/>
+    <text x="176" y="596" fill="#e7edf7" font-size="13" font-weight="600">sample csv parser</text>
+    <text x="176" y="613" fill="#aab7c9" font-family="monospace" font-size="10">ID 3 · CSV · GLOBAL</text>
+    <rect x="941" y="585" width="78" height="27" rx="6" fill="#1a283b" stroke="#35445a"/>
+    <text x="980" y="603" text-anchor="middle" fill="#8290a6" font-size="10">Read only</text>
+
+    <rect x="157" y="635" width="886" height="52" rx="8" fill="#101a2a" stroke="#2b3a50"/>
+    <text x="176" y="658" fill="#e7edf7" font-size="13" font-weight="600">Windows event JSON</text>
+    <text x="176" y="675" fill="#aab7c9" font-family="monospace" font-size="10">ID 4 · JSON · admin-dev</text>
+    <rect x="839" y="647" width="72" height="28" rx="6" fill="#1a283b" stroke="#35445a"/>
+    <text x="875" y="666" text-anchor="middle" fill="#c0cad8" font-size="10">Edit</text>
+    <rect x="919" y="647" width="100" height="28" rx="6" fill="#2a202b" stroke="#513843"/>
+    <text x="969" y="666" text-anchor="middle" fill="#dfa6aa" font-size="10">Delete</text>
+    <text x="125" y="738" fill="#68778c" font-family="monospace" font-size="9" letter-spacing="1">LOGLINE UI</text>
+    <text x="1075" y="738" text-anchor="end" fill="#68778c" font-family="monospace" font-size="9" letter-spacing="1">CONNECTED TO YOUR LOCAL API</text>
+  </g>
+</svg>
