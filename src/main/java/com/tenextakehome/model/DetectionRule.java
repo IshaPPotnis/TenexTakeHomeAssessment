@@ -23,6 +23,8 @@ public class DetectionRule {
     @NotBlank(message = "Rule description is required")
     private String description;
 
+    private String customerName = CustomerScope.GLOBAL;
+
     public DetectionRule() {
     }
 
@@ -69,5 +71,13 @@ public class DetectionRule {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getCustomerName() {
+        return CustomerScope.isGlobal(customerName) ? CustomerScope.GLOBAL : customerName;
+    }
+
+    public void setCustomerName(String customerName) {
+        this.customerName = CustomerScope.isGlobal(customerName) ? CustomerScope.GLOBAL : customerName;
     }
 }

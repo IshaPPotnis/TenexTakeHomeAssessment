@@ -12,12 +12,14 @@ import com.tenextakehome.service.DetectionRuleService;
 import com.tenextakehome.service.DefinitionService;
 import com.tenextakehome.service.ParsingService;
 import com.tenextakehome.service.RuleEvaluator;
+import com.tenextakehome.service.AuthTokenService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -47,9 +49,11 @@ public class LogsProcessorController {
 
     @PostMapping("/process")
     @Operation(summary = "Process log entries")
-    public ResponseEntity<ProcessLogsResponse> processLogs(@Valid @RequestBody ProcessLogsRequest request) {
-        ParserDefinition parser = definitionService.getDefinition(request.getParserId());
-        List<DetectionRule> detectionRules = detectionRuleService.getAllRules();
+    public ResponseEntity<ProcessLogsResponse> processLogs(
+            @Valid @RequestBody ProcessLogsRequest request,
+            @RequestHeader(AuthTokenService.CUSTOMER_NAME_HEADER) String customerName) {
+        ParserDefinition parser = definitionService.getDefinition(request.getParserId(), customerName);
+        List<DetectionRule> detectionRules = detectionRuleService.getAllRules(customerName);
         List<Result> results = request.getLogs().stream()
                 .map(log -> parseLog(log, parser, detectionRules))
                 .collect(Collectors.toList());

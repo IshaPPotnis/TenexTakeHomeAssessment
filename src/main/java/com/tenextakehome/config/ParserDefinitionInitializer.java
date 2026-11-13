@@ -3,6 +3,7 @@ package com.tenextakehome.config;
 import com.tenextakehome.dto.ParserDefinitionRequest;
 import com.tenextakehome.model.ParserDefinition;
 import com.tenextakehome.model.ParserType;
+import com.tenextakehome.model.CustomerScope;
 import com.tenextakehome.service.DefinitionService;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -24,7 +25,8 @@ public class ParserDefinitionInitializer implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         Set<ParserType> existingSampleTypes = definitionService.getAllDefinitions().stream()
-                .filter(definition -> definition.getParserType() != null
+                .filter(definition -> CustomerScope.isGlobal(definition.getCustomerName())
+                        && definition.getParserType() != null
                         && ("sample " + definition.getParserType().name().toLowerCase() + " parser")
                         .equals(definition.getParserName()))
                 .map(ParserDefinition::getParserType)
@@ -33,7 +35,7 @@ public class ParserDefinitionInitializer implements ApplicationRunner {
         for (ParserType parserType : ParserType.values()) {
             if (!existingSampleTypes.contains(parserType)) {
                 String parserName = "sample " + parserType.name().toLowerCase() + " parser";
-                definitionService.createDefinition(new ParserDefinitionRequest(parserName, parserType));
+                definitionService.createGlobalDefinition(new ParserDefinitionRequest(parserName, parserType));
             }
         }
     }

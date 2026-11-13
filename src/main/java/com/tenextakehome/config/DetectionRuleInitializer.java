@@ -1,6 +1,7 @@
 package com.tenextakehome.config;
 
 import com.tenextakehome.dto.DetectionRuleRequest;
+import com.tenextakehome.model.CustomerScope;
 import com.tenextakehome.service.DetectionRuleService;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -23,9 +24,10 @@ public class DetectionRuleInitializer implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         boolean ruleExists = detectionRuleService.getAllRules().stream()
-                .anyMatch(rule -> RULE_NAME.equals(rule.getName()));
+                .anyMatch(rule -> CustomerScope.isGlobal(rule.getCustomerName())
+                        && RULE_NAME.equals(rule.getName()));
         if (!ruleExists) {
-            detectionRuleService.createRule(
+            detectionRuleService.createGlobalRule(
                     new DetectionRuleRequest(RULE_NAME, RULE_LOGIC, RULE_DESCRIPTION));
         }
     }

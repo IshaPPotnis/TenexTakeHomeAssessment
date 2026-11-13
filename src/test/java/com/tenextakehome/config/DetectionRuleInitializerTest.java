@@ -26,7 +26,7 @@ class DetectionRuleInitializerTest {
         initializer.run(null);
 
         ArgumentCaptor<DetectionRuleRequest> requestCaptor = ArgumentCaptor.forClass(DetectionRuleRequest.class);
-        verify(detectionRuleService).createRule(requestCaptor.capture());
+        verify(detectionRuleService).createGlobalRule(requestCaptor.capture());
         DetectionRuleRequest request = requestCaptor.getValue();
         assertEquals("Failed Login attempt", request.getName());
         assertEquals("EventID=4625 AND Channel=Security", request.getRuleLogic());
@@ -42,6 +42,6 @@ class DetectionRuleInitializerTest {
 
         initializer.run(null);
 
-        verify(detectionRuleService, never()).createRule(org.mockito.ArgumentMatchers.any());
+        verify(detectionRuleService, never()).createGlobalRule(org.mockito.ArgumentMatchers.any());
     }
 }

@@ -28,7 +28,7 @@ class ParserDefinitionInitializerTest {
 
         ArgumentCaptor<ParserDefinitionRequest> requests =
                 ArgumentCaptor.forClass(ParserDefinitionRequest.class);
-        verify(definitionService, times(ParserType.values().length)).createDefinition(requests.capture());
+        verify(definitionService, times(ParserType.values().length)).createGlobalDefinition(requests.capture());
         for (ParserDefinitionRequest request : requests.getAllValues()) {
             org.junit.jupiter.api.Assertions.assertEquals(
                     "sample " + request.getParserType().name().toLowerCase() + " parser",
@@ -45,6 +45,6 @@ class ParserDefinitionInitializerTest {
 
         initializer.run(null);
 
-        verify(definitionService, never()).createDefinition(org.mockito.ArgumentMatchers.any());
+        verify(definitionService, never()).createGlobalDefinition(org.mockito.ArgumentMatchers.any());
     }
 }

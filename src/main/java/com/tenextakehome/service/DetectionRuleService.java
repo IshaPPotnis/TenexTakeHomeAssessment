@@ -2,6 +2,7 @@ package com.tenextakehome.service;
 
 import com.tenextakehome.dto.DetectionRuleRequest;
 import com.tenextakehome.exception.ResourceNotFoundException;
+import com.tenextakehome.model.CustomerScope;
 import com.tenextakehome.model.DetectionRule;
 import com.tenextakehome.repository.DetectionRuleRepository;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -35,31 +36,58 @@ public class DetectionRuleService {
         return rules;
     }
 
+    public List<DetectionRule> getAllRules(String customerName) {
+        return getAllRules().stream()
+                .filter(rule -> CustomerScope.isVisibleTo(rule.getCustomerName(), customerName))
+                .toList();
+    }
+
     public DetectionRule getRule(Long id) {
         return detectionRuleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Detection rule not found with id: " + id));
     }
 
     public DetectionRule createRule(DetectionRuleRequest request) {
+        return createRule(request, CustomerScope.GLOBAL);
+    }
+
+    public DetectionRule createGlobalRule(DetectionRuleRequest request) {
+        return createRule(request, CustomerScope.GLOBAL);
+    }
+
+    public DetectionRule createRule(DetectionRuleRequest request, String customerName) {
         DetectionRule rule = new DetectionRule(
                 request.getName(),
                 nextRuleId(),
                 request.getRuleLogic(),
                 request.getDescription());
+        rule.setCustomerName(customerName);
         return detectionRuleRepository.save(rule);
     }
 
-    public DetectionRule updateRule(Long id, DetectionRuleRequest request) {
+    public DetectionRule getRule(Long id, String customerName) {
         DetectionRule rule = getRule(id);
+        if (!CustomerScope.isVisibleTo(rule.getCustomerName(), customerName)) {
+            throw new ResourceNotFoundException("Detection rule not found with id: " + id);
+        }
+        return rule;
+    }
+
+    public DetectionRule updateRule(Long id, DetectionRuleRequest request, String customerName) {
+        DetectionRule rule = getRule(id, customerName);
+        if (CustomerScope.isGlobal(rule.getCustomerName())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Global detection rules cannot be modified");
+        }
         rule.setName(request.getName());
         rule.setRuleLogic(request.getRuleLogic());
         rule.setDescription(request.getDescription());
         return detectionRuleRepository.save(rule);
     }
 
-    public void deleteRule(Long id) {
-        if (!detectionRuleRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Detection rule not found with id: " + id);
+    public void deleteRule(Long id, String customerName) {
+        DetectionRule rule = getRule(id, customerName);
+        if (CustomerScope.isGlobal(rule.getCustomerName())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Global detection rules cannot be deleted");
         }
         detectionRuleRepository.deleteById(id);
     }

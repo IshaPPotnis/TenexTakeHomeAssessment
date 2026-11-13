@@ -15,9 +15,30 @@
         <span class="brand-mark" aria-hidden="true">L</span>
         <span>Logline<span class="brand-dot">.</span></span>
       </a>
-      <span class="service-status"><span class="status-dot"></span> PROCESSOR API</span>
+      <div class="account-controls">
+        <span id="account-name" class="service-status" hidden></span>
+        <button id="logout-button" class="secondary-button" type="button" hidden>Log out</button>
+        <span class="service-status"><span class="status-dot"></span> PROCESSOR API</span>
+      </div>
     </header>
 
+    <section id="login-view" class="workspace login-view" aria-labelledby="login-title" hidden>
+      <p class="step-label">ACCOUNT ACCESS</p>
+      <h2 id="login-title">Sign in to Logline</h2>
+      <p class="section-copy">Use your customer account to access its parsers and detection rules.</p>
+      <form id="login-form" class="parser-form login-form">
+        <label for="login-username">Username</label>
+        <input id="login-username" name="username" type="text" autocomplete="username" required>
+        <label for="login-password">Password</label>
+        <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+        <div id="login-status" class="result" role="status" aria-live="polite" hidden></div>
+        <div class="form-actions">
+          <button id="login-button" type="submit"><span>Sign in</span></button>
+        </div>
+      </form>
+    </section>
+
+    <div id="application-content" hidden>
     <section class="intro" aria-labelledby="page-title">
       <p class="eyebrow">OBSERVABILITY TOOLKIT <span> / </span> INGESTION</p>
       <h1 id="page-title">Make logs readable</h1>
@@ -140,6 +161,7 @@
     </section>
 
     <footer><span>LOGLINE UI</span><span>CONNECTED TO YOUR LOCAL API</span></footer>
+    </div>
   </main>
 </body>
 </html>

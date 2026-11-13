@@ -22,6 +22,7 @@ public class ParserDefinition {
     private ParserType parserType;
 
     private List<String> fieldsToRemove = new ArrayList<>();
+    private String customerName = CustomerScope.GLOBAL;
 
     public ParserDefinition() {
     }
@@ -67,5 +68,13 @@ public class ParserDefinition {
 
     public void setFieldsToRemove(List<String> fieldsToRemove) {
         this.fieldsToRemove = fieldsToRemove == null ? new ArrayList<>() : new ArrayList<>(fieldsToRemove);
+    }
+
+    public String getCustomerName() {
+        return CustomerScope.isGlobal(customerName) ? CustomerScope.GLOBAL : customerName;
+    }
+
+    public void setCustomerName(String customerName) {
+        this.customerName = CustomerScope.isGlobal(customerName) ? CustomerScope.GLOBAL : customerName;
     }
 }

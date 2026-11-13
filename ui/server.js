@@ -18,13 +18,22 @@ const server = http.createServer(async (request, response) => {
   const isDefinitionItem = /^\/api\/definitions\/\d+$/.test(pathname);
   const isDetectionRulesCollection = pathname === "/api/detection-rules";
   const isDetectionRuleItem = /^\/api\/detection-rules\/\d+$/.test(pathname);
+  const isAuthLogin = pathname === "/api/auth/login";
+  const isAuthSession = pathname === "/api/auth/session";
+  const isAuthLogout = pathname === "/api/auth/logout";
   if (isProcessLogs || isDefinitionsCollection || isDefinitionItem
-      || isDetectionRulesCollection || isDetectionRuleItem) {
-    const allowedMethods = isProcessLogs
-      ? ["POST"]
-      : isDefinitionsCollection || isDetectionRulesCollection
-        ? ["GET", "POST"]
-        : ["GET", "PUT", "DELETE"];
+      || isDetectionRulesCollection || isDetectionRuleItem
+      || isAuthLogin || isAuthSession || isAuthLogout) {
+    let allowedMethods;
+    if (isProcessLogs || isAuthLogin || isAuthLogout) {
+      allowedMethods = ["POST"];
+    } else if (isAuthSession) {
+      allowedMethods = ["GET"];
+    } else if (isDefinitionsCollection || isDetectionRulesCollection) {
+      allowedMethods = ["GET", "POST"];
+    } else {
+      allowedMethods = ["GET", "PUT", "DELETE"];
+    }
     if (!allowedMethods.includes(request.method)) {
       response.writeHead(405, {
         Allow: allowedMethods.join(", "),
@@ -39,15 +48,20 @@ const server = http.createServer(async (request, response) => {
         ? await readRequestBody(request)
         : undefined;
       const headers = body === undefined ? {} : { "Content-Type": "application/json" };
+      if (request.headers.authorization) headers.Authorization = request.headers.authorization;
+      if (request.headers["x-customer-name"]) {
+        headers["X-Customer-Name"] = request.headers["x-customer-name"];
+      }
       const apiResponse = await fetch(`${apiBaseUrl}${pathname}`, {
         method: request.method,
         headers,
         body
       });
       const responseBody = await apiResponse.text();
-      response.writeHead(apiResponse.status, {
+      const responseHeaders = {
         "Content-Type": apiResponse.headers.get("content-type") || "text/plain; charset=utf-8"
-      });
+      };
+      response.writeHead(apiResponse.status, responseHeaders);
       response.end(responseBody);
     } catch (error) {
       const status = error instanceof RangeError ? 413 : 502;

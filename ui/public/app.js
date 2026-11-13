@@ -30,6 +30,15 @@ const detectionName = document.querySelector("#detection-name");
 const detectionLogic = document.querySelector("#detection-logic");
 const detectionDescription = document.querySelector("#detection-description");
 const saveDetectionButton = document.querySelector("#save-detection-button");
+const loginView = document.querySelector("#login-view");
+const applicationContent = document.querySelector("#application-content");
+const loginForm = document.querySelector("#login-form");
+const loginStatus = document.querySelector("#login-status");
+const loginButton = document.querySelector("#login-button");
+const loginUsername = document.querySelector("#login-username");
+const loginPassword = document.querySelector("#login-password");
+const accountName = document.querySelector("#account-name");
+const logoutButton = document.querySelector("#logout-button");
 
 let definitions = [];
 let detectionRules = [];
@@ -46,7 +55,14 @@ function updateLineCount() {
 }
 
 async function apiRequest(path, options = {}) {
-  const response = await fetch(path, options);
+  const token = sessionStorage.getItem("accessToken");
+  const customerName = sessionStorage.getItem("customerName");
+  const headers = { ...options.headers };
+  if (token && path !== "/api/auth/login") {
+    headers.Authorization = `Bearer ${token}`;
+    headers["X-Customer-Name"] = customerName;
+  }
+  const response = await fetch(path, { ...options, headers });
   const text = await response.text();
   let payload = text;
   if (text) {
@@ -57,6 +73,10 @@ async function apiRequest(path, options = {}) {
     }
   }
   if (!response.ok) {
+    if (response.status === 401 && !["/api/auth/login", "/api/auth/session"].includes(path)) {
+      sessionStorage.removeItem("accessToken");
+      showLogin();
+    }
     const message = typeof payload === "string"
       ? payload
       : payload.message || payload.error || `Request failed (${response.status})`;
@@ -75,6 +95,23 @@ function hideStatus(element) {
   element.hidden = true;
   element.textContent = "";
   element.classList.remove("is-error");
+}
+
+function showLogin() {
+  loginView.hidden = false;
+  applicationContent.hidden = true;
+  accountName.hidden = true;
+  logoutButton.hidden = true;
+}
+
+function showWorkspace(customerName) {
+  loginView.hidden = true;
+  applicationContent.hidden = false;
+  accountName.textContent = `CUSTOMER: ${customerName}`;
+  accountName.hidden = false;
+  logoutButton.hidden = false;
+  loadDefinitions();
+  loadDetectionRules();
 }
 
 function setView(view) {
@@ -175,7 +212,8 @@ function renderDetectionRules() {
     const name = document.createElement("h3");
     name.textContent = rule.name;
     const meta = document.createElement("p");
-    meta.textContent = `ID ${rule.id}`;
+    const isGlobal = rule.customerName === "GLOBAL";
+    meta.textContent = `ID ${rule.id} · ${isGlobal ? "GLOBAL" : rule.customerName}`;
     const logic = document.createElement("pre");
     logic.className = "rule-logic";
     logic.textContent = rule.ruleLogic;
@@ -190,11 +228,15 @@ function renderDetectionRules() {
     editButton.type = "button";
     editButton.className = "secondary-button";
     editButton.textContent = "Edit";
+    editButton.disabled = isGlobal;
+    editButton.title = isGlobal ? "Global rules are read-only" : "";
     editButton.addEventListener("click", () => beginEditDetection(rule));
     const deleteButton = document.createElement("button");
     deleteButton.type = "button";
     deleteButton.className = "danger-button";
     deleteButton.textContent = "Delete";
+    deleteButton.disabled = isGlobal;
+    deleteButton.title = isGlobal ? "Global rules are read-only" : "";
     deleteButton.addEventListener("click", () => deleteDetectionRule(rule));
     actions.append(editButton, deleteButton);
     card.append(details, actions);
@@ -314,7 +356,8 @@ function renderDefinitions() {
     const name = document.createElement("h3");
     name.textContent = definition.parserName;
     const meta = document.createElement("p");
-    meta.textContent = `ID ${definition.parserId} · ${definition.parserType}`;
+    const isGlobal = definition.customerName === "GLOBAL";
+    meta.textContent = `ID ${definition.parserId} · ${definition.parserType} · ${isGlobal ? "GLOBAL" : definition.customerName}`;
     const exclusions = document.createElement("p");
     const fields = Array.isArray(definition.fieldsToRemove) ? definition.fieldsToRemove : [];
     exclusions.textContent = fields.length ? `Removes: ${fields.join(", ")}` : "No fields removed";
@@ -326,11 +369,15 @@ function renderDefinitions() {
     editButton.type = "button";
     editButton.className = "secondary-button";
     editButton.textContent = "Edit";
+    editButton.disabled = isGlobal;
+    editButton.title = isGlobal ? "Global definitions are read-only" : "";
     editButton.addEventListener("click", () => beginEdit(definition));
     const deleteButton = document.createElement("button");
     deleteButton.type = "button";
     deleteButton.className = "danger-button";
     deleteButton.textContent = "Delete";
+    deleteButton.disabled = isGlobal;
+    deleteButton.title = isGlobal ? "Global definitions are read-only" : "";
     deleteButton.addEventListener("click", () => deleteDefinition(definition));
     actions.append(editButton, deleteButton);
 
@@ -536,6 +583,60 @@ document.querySelector("#cancel-detection-edit-button").addEventListener("click"
 document.querySelector("#cancel-detection-form-button").addEventListener("click", closeDetectionForm);
 detectionForm.addEventListener("submit", saveDetectionRule);
 
+loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  hideStatus(loginStatus);
+  loginButton.disabled = true;
+  try {
+    const session = await apiRequest("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: loginUsername.value.trim(),
+        password: loginPassword.value
+      })
+    });
+    sessionStorage.setItem("accessToken", session.accessToken);
+    sessionStorage.setItem("customerName", session.customerName);
+    loginPassword.value = "";
+    showWorkspace(session.customerName);
+  } catch (error) {
+    showStatus(loginStatus, error.message || "Unable to sign in.", true);
+  } finally {
+    loginButton.disabled = false;
+  }
+});
+
+logoutButton.addEventListener("click", async () => {
+  logoutButton.disabled = true;
+  try {
+    await apiRequest("/api/auth/logout", { method: "POST" });
+    sessionStorage.removeItem("accessToken");
+    sessionStorage.removeItem("customerName");
+    showLogin();
+    loginPassword.value = "";
+    loginUsername.focus();
+  } catch (error) {
+    showStatus(processStatus, error.message || "Unable to log out.", true);
+  } finally {
+    logoutButton.disabled = false;
+  }
+});
+
+async function initializeSession() {
+  if (!sessionStorage.getItem("accessToken") || !sessionStorage.getItem("customerName")) {
+    showLogin();
+    return;
+  }
+  try {
+    const session = await apiRequest("/api/auth/session");
+    showWorkspace(session.customerName);
+  } catch {
+    sessionStorage.removeItem("accessToken");
+    sessionStorage.removeItem("customerName");
+    showLogin();
+  }
+}
+
 updateLineCount();
-loadDefinitions();
-loadDetectionRules();
+initializeSession();

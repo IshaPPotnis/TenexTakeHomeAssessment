@@ -33,6 +33,12 @@ button, textarea { font: inherit; }
   justify-content: space-between;
   border-bottom: 1px solid rgba(130, 144, 166, .16);
 }
+.account-controls { display: flex; align-items: center; gap: 14px; }
+.account-controls .service-status { font-family: "DM Mono", monospace; }
+.account-controls .secondary-button { margin: 0; }
+.login-view { max-width: 500px; margin: 70px auto; }
+.login-view h2 { font-size: 22px; }
+.login-form { max-width: 100%; }
 
 .brand { display: flex; align-items: center; gap: 11px; color: #f3f6fa; text-decoration: none; font: 800 17px Manrope, sans-serif; letter-spacing: -.5px; }
 .brand-mark { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 9px; color: #142019; background: var(--accent); font: 800 17px Manrope, sans-serif; }

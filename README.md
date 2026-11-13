@@ -8,6 +8,7 @@ A Java-based Spring Boot REST API with a small JavaScript interface for submitti
 - REST API for log processing
 - Redis-backed parser definition CRUD API
 - Browser UI for processing logs, managing parser definitions, and maintaining detection rules
+- Session-based demo login with customer-scoped parser definitions and detection rules
 - Swagger/OpenAPI documentation
 
 ## Project Structure
@@ -25,6 +26,9 @@ docker run --rm --name tenex-redis -p 6379:6379 redis:7-alpine
 ```
 
 ## API Endpoints
+- POST `/api/auth/login` - Authenticate and create a customer session
+- GET `/api/auth/session` - Get the customer associated with the bearer token
+- POST `/api/auth/logout` - Revoke the current bearer token
 - POST `/api/logs/process` - Accepts log strings and the parser ID to use
 - GET `/api/definitions` - List parser definitions
 - GET `/api/definitions/{parserId}` - Get a parser definition
@@ -94,6 +98,10 @@ docker run --rm --add-host=host.docker.internal:host-gateway -p 3000:3000 logs-p
 ```
 
 Open <http://localhost:3000>. The UI container proxies requests to the Spring API at `http://host.docker.internal:8080`; override `API_BASE_URL` if the API runs elsewhere. The Spring API must be running and reachable from the UI container. For Docker on Linux, `--add-host=host.docker.internal:host-gateway` makes the host API address available inside the UI container.
+
+Sign in with username `admin-dev` and password `admin@123`. Login returns a random bearer token and `customerName`; the UI stores both for the current browser tab and sends `Authorization: Bearer <token>` and `X-Customer-Name: <customerName>` on subsequent requests until logout. The API verifies that the customer-name header matches the customer bound to the bearer token. Tokens expire after eight hours and are stored by SHA-256 digest in Redis. This hardcoded account is for local development only and maps to the `admin-dev` customer scope. Parser definitions and detection rules are stored with a `customerName`, assigned by the authenticated token rather than accepted from API request bodies. A customer sees its own records and records in the `GLOBAL` scope. Global records are read-only in the customer UI. The built-in sample parsers and failed-login rule are global. Do not use the demo credentials in production.
+
+All parser, detection-rule, and log-processing API routes require the bearer token and matching `X-Customer-Name` header returned by `/api/auth/login`. `/api/auth/session` and `/api/auth/logout` also require both; only the login route is accessible without authentication.
 
 ## Swagger UI
 Open:
