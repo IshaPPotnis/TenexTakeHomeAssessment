@@ -1,5 +1,6 @@
 package com.tenextakehome.dto;
 
+import com.tenextakehome.validation.ValidRuleLogic;
 import jakarta.validation.constraints.NotBlank;
 
 public class DetectionRuleRequest {
@@ -8,6 +9,7 @@ public class DetectionRuleRequest {
     private String name;
 
     @NotBlank(message = "Rule logic is required")
+    @ValidRuleLogic
     private String ruleLogic;
 
     @NotBlank(message = "Rule description is required")

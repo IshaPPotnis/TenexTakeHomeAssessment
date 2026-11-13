@@ -55,6 +55,22 @@ public class DetectionRuleService {
         return createRule(request, CustomerScope.GLOBAL);
     }
 
+    public DetectionRule initializeGlobalRule(DetectionRuleRequest request) {
+        DetectionRule rule = getAllRules().stream()
+                .filter(existing -> CustomerScope.isGlobal(existing.getCustomerName())
+                        && request.getName().equals(existing.getName()))
+                .findFirst()
+                .orElse(null);
+        if (rule == null) {
+            return createGlobalRule(request);
+        }
+
+        rule.setName(request.getName());
+        rule.setRuleLogic(request.getRuleLogic());
+        rule.setDescription(request.getDescription());
+        return detectionRuleRepository.save(rule);
+    }
+
     public DetectionRule createRule(DetectionRuleRequest request, String customerName) {
         DetectionRule rule = new DetectionRule(
                 request.getName(),

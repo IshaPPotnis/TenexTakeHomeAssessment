@@ -101,7 +101,7 @@ Request:
 
 ```json
 {
-  "logs": ["{\"EventID\":4625,\"Channel\":\"Security\"}"],
+  "logs": ["{\"EventID\":\"4625\",\"Channel\":\"Security\"}"],
   "parserId": 2
 }
 ```
@@ -114,8 +114,8 @@ Response (`200`):
 {
   "results": [
     {
-      "log": "{\"EventID\":4625,\"Channel\":\"Security\"}",
-      "parsedOutput": "{\"EventID\":4625,\"Channel\":\"Security\"}",
+      "log": "{\"EventID\":\"4625\",\"Channel\":\"Security\"}",
+      "parsedOutput": "{\"EventID\":\"4625\",\"Channel\":\"Security\"}",
       "notes": "Parsed successfully using JSON.",
       "matchedIncident": ["1000-Failed Login attempt"]
     }
@@ -150,7 +150,7 @@ This parses to `{"EventID":"4625","Channel":"Security","Message":"Failed login"}
 **JSON** — use the `sample json parser`:
 
 ```json
-{"EventID":4625,"Channel":"Security","Message":"Failed login"}
+{"EventID":"4625","Channel":"Security","Message":"Failed login"}
 ```
 
 **CSV** — use the `sample csv parser`:
@@ -221,7 +221,7 @@ At application startup, the API ensures the following shared `GLOBAL` records ex
 - `sample csv parser` with type `CSV` and columns `EventID`, `Channel`, and `Message`
 - `Failed Login attempt`, with logic `EventID=4625 AND Channel=Security`
 
-These are initialized only when missing, so restarting the app does not overwrite existing sample definitions or the built-in rule.
+Missing sample parser definitions are created at startup without overwriting existing definitions. The built-in `Failed Login attempt` rule is created if missing and reset to the documented name, logic, and description on every startup; its existing ID is preserved.
 
 ## API documentation
 
